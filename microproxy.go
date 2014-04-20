@@ -22,13 +22,13 @@ const (
 	reopenLog int = iota
 )
 
-// Digest Auth. operation type
+// Digest auth. operation type
 const (
 	validateUser int = iota
 	getNonce     int = iota
 )
 
-// Digest auth resp status
+// Digest auth. resp status
 const (
 	authOk     int = iota
 	authFailed int = iota
@@ -202,7 +202,7 @@ func NewLogger(conf *Configuration) *HttpLogger {
 					var err error
 					fh, err = os.OpenFile(conf.AccessLog, os.O_APPEND|os.O_WRONLY|os.O_CREATE, 0600)
 					if err != nil {
-						log.Fatalf("Couldn't reopenLog log file: %v", err)
+						log.Fatalf("Couldn't reopen log file: %v", err)
 					}
 				}
 			}
@@ -354,7 +354,7 @@ func setActivityLog(conf *Configuration, proxy *goproxy.ProxyHttpServer) {
 }
 
 func main() {
-	config := flag.String("config", "microproxy.json", "proxy conf file")
+	config := flag.String("config", "microproxy.json", "proxy configuration file")
 	verbose := flag.Bool("v", false, "enable verbose debug mode")
 
 	flag.Parse()
