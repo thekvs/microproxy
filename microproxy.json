@@ -1,0 +1,11 @@
+{
+    "Listen": "127.0.0.1:3129",
+    "AccessLog": "/tmp/microproxy.access.log",
+    "ActivityLog": "/tmp/microproxy.error.log",
+    "AllowedConnectPorts": ["443", "80"],
+    "AuthFile": "auth.txt",
+    "AuthType": "basic",
+    "AuthRealm": "proxy",
+    "ForwardedFor": "on",
+    "AllowedNetworks": ["127.0.0.1/32"]
+}
