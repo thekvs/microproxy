@@ -3,6 +3,7 @@
 microproxy is a minimalistic non-caching HTTP/HTTPS proxy server.
 
 ### Main features
+* Single executable with no external dependencies.
 * Basic/Digest auth. methods.
 * IP-based black and white access lists.
 * Ability to log all requests.
@@ -21,7 +22,7 @@ microproxy uses JSON format for configuration file. Below is a list of supported
 * ```"AccessLog": "path"``` -- path to a file where to write requested through proxy urls.
 * ```"ActivityLog": "path"``` -- path to a file where to write debug and auxilary information.
 * ```"AllowedConnectPorts": ["port1", "port2", ...]``` -- list of allowed port to CONNECT to. Default: ```["443"]```
-* ```"AuthFile": "path"``` -- path to a file with users' passwords. If you use "digest" auth. scheme this file has to be in the format used by Apache's htdigest utility, for "basic" scheme it has to be in format used by Apache's htpasswd utility with -p option, i.e. created as ```$ htpasswd -c -p auth.txt username```.
+* ```"AuthFile": "path"``` -- path to a file with users' passwords. If you use "digest" auth. scheme this file has to be in the format used by Apache's htdigest utility, for "basic" scheme it has to be in the format used by Apache's htpasswd utility with -p option, i.e. created as ```$ htpasswd -c -p auth.txt username```.
 * ```"AuthType": "type"``` -- authentication scheme type, must be either "basic" or "digest".
 * ```"AuthRealm": "realmstring"``` -- realm name which is to be reported to the client for the proxy authentication scheme.
 * ```"ForwardedFor": "type"``` -- specifies how to handle X-Forwarded-For HTTP protocol header. Avalible options are: ```"on"``` -- set X-Forwarded-For with client's IP address, ```"off"``` -- do nothing, ```"delete"``` -- delete header, this turns on stealth mode, ```"truncate"``` -- delete all old headers and insert a new one. Default: ```"on"```.
