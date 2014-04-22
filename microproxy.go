@@ -336,9 +336,42 @@ func setForwardedForHeaderHandler(conf *Configuration, proxy *goproxy.ProxyHttpS
 	proxy.OnRequest().DoFunc(f)
 }
 
-func CreateProxy(conf *Configuration) *goproxy.ProxyHttpServer {
+func makeCustomDial(localAddr *net.TCPAddr) func(string, string) (net.Conn, error) {
+	return func(network, addr string) (net.Conn, error) {
+		remoteAddr, err := net.ResolveTCPAddr(network, addr)
+		if err != nil {
+			return nil, err
+		}
+		c, err := net.DialTCP(network, localAddr, remoteAddr)
+		return c, err
+	}
+}
+
+func createProxy(conf *Configuration) *goproxy.ProxyHttpServer {
 	proxy := goproxy.NewProxyHttpServer()
 	setActivityLog(conf, proxy)
+	
+	if conf.BindIP != "" {
+		var laddr string
+		addressOk := true
+		if ip := net.ParseIP(conf.BindIP); ip != nil {
+			if ip4 := ip.To4(); ip4 != nil {
+				laddr = conf.BindIP + ":0"
+			} else if ip16 := ip.To16(); ip16 != nil {
+				laddr = "[" + conf.BindIP + "]:0"
+			} else {
+				proxy.Logger.Printf("[WARN] couldn't use \"%v\" as outgoing request address.\n", conf.BindIP)
+				addressOk = false
+			}
+		}
+		if addressOk {
+			if addr, err := net.ResolveTCPAddr("tcp", laddr); err == nil {
+				proxy.Tr.Dial = makeCustomDial(addr)
+			} else {
+				proxy.Logger.Printf("[WARN] couldn't use \"%v\" as outgoing request address. %v\n", conf.BindIP, err)
+			}
+		}
+	}
 
 	return proxy
 }
@@ -361,7 +394,7 @@ func main() {
 
 	conf := NewConfiguration(*config)
 
-	proxy := CreateProxy(conf)
+	proxy := createProxy(conf)
 	proxy.Verbose = *verbose
 
 	logger := NewLogger(conf)

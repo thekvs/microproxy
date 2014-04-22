@@ -18,6 +18,7 @@ type Configuration struct {
 	AuthType            string
 	AuthFile            string
 	ForwardedFor        string
+	BindIP              string
 }
 
 func validateNetworks(networks []string) {

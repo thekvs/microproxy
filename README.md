@@ -2,12 +2,13 @@
 ## About
 microproxy is a minimalistic non-caching HTTP/HTTPS proxy server.
 
-### Main features
+## Main features
 * Single executable with no external dependencies.
 * Basic/Digest auth. methods.
 * IP-based black and white access lists.
 * Ability to log all requests.
 * Ability to tweak X-Forwarded-For header.
+* Ability to specify ip address for outgoing connections.
 * Reasonable memory usage.
 
 ## Installing
@@ -28,6 +29,7 @@ microproxy uses JSON format for configuration file. Below is a list of supported
 * ```"ForwardedFor": "type"``` -- specifies how to handle X-Forwarded-For HTTP protocol header. Avalible options are: ```"on"``` -- set X-Forwarded-For with client's IP address, ```"off"``` -- do nothing, ```"delete"``` -- delete header, this turns on stealth mode, ```"truncate"``` -- delete all old headers and insert a new one. Default: ```"on"```.
 * ```"AllowedNetworks": ["net1", ...]``` -- list of whitelisted networks in CIDR format.
 * ```"DisallowedNetworks": ["net1", ...]``` -- list of blacklisted networks in CIDR format.
+* ```"BindIP": "ip"``` -- specify which IP will be used for outgoing connections.
 
 ## Usage
 ```
