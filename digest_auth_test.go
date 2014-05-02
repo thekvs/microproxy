@@ -22,7 +22,7 @@ func TestHtdigest(t *testing.T) {
 	}
 
 	h.addNonce("c8f0a8dad4b53c04c1a2c8a05210c7f7")
-	
+
 	data := &DigestAuthData{
 		user:     "user",
 		realm:    "remparo",

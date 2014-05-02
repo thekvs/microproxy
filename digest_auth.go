@@ -17,7 +17,7 @@ const (
 )
 
 type DigestAuth struct {
-	users  map[string]string
+	users map[string]string
 	// issued nonce values
 	nonces map[string]bool
 }
