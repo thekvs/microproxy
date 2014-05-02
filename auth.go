@@ -16,17 +16,19 @@ type BasicAuthFunc func(authData *BasicAuthData) *BasicAuthResponse
 type DigestAuthFunc func(authData *DigestAuthData, op int) *DigestAuthResponse
 
 var unauthorizedMsg = []byte("407 Proxy Authentication Required")
-var proxyAuthorizatonHeader = "Proxy-Authorization"
+
+const proxyAuthorizatonHeader = "Proxy-Authorization"
+const proxyAuthenticateHeader = "Proxy-Authenticate"
 
 func basicUnauthorized(req *http.Request, realm string) *http.Response {
-	h := fmt.Sprintf("Basic realm=%s", realm)
+	header := fmt.Sprintf("Basic realm=%s", realm)
 
 	return &http.Response{
 		StatusCode:    407,
 		ProtoMajor:    1,
 		ProtoMinor:    1,
 		Request:       req,
-		Header:        http.Header{"Proxy-Authenticate": []string{h}},
+		Header:        http.Header{proxyAuthenticateHeader: []string{header}},
 		Body:          ioutil.NopCloser(bytes.NewBuffer(unauthorizedMsg)),
 		ContentLength: int64(len(unauthorizedMsg)),
 	}
@@ -42,7 +44,7 @@ func digestUnauthorized(req *http.Request, realm string, authFunc DigestAuthFunc
 		ProtoMajor:    1,
 		ProtoMinor:    1,
 		Request:       req,
-		Header:        http.Header{"Proxy-Authenticate": []string{header}},
+		Header:        http.Header{proxyAuthenticateHeader: []string{header}},
 		Body:          ioutil.NopCloser(bytes.NewBuffer(unauthorizedMsg)),
 		ContentLength: int64(len(unauthorizedMsg)),
 	}
