@@ -350,7 +350,7 @@ func makeCustomDial(localAddr *net.TCPAddr) func(string, string) (net.Conn, erro
 func createProxy(conf *Configuration) *goproxy.ProxyHttpServer {
 	proxy := goproxy.NewProxyHttpServer()
 	setActivityLog(conf, proxy)
-	
+
 	if conf.BindIP != "" {
 		var laddr string
 		addressOk := true
