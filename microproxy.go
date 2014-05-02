@@ -386,6 +386,29 @@ func setActivityLog(conf *Configuration, proxy *goproxy.ProxyHttpServer) {
 	}
 }
 
+func setSignalHandler(conf *Configuration, proxy *goproxy.ProxyHttpServer, logger *HttpLogger) {
+	signalChannel := make(chan os.Signal)
+	signal.Notify(signalChannel, os.Interrupt, syscall.SIGUSR1)
+
+	go func() {
+		for {
+			sig := <-signalChannel
+			switch sig {
+			case os.Interrupt:
+				proxy.Logger.Println("got interrupt signal, exiting")
+				logger.Close()
+				os.Exit(0)
+			case syscall.SIGUSR1:
+				proxy.Logger.Println("got USR1 signal, reopening logs")
+				// Reopen access log
+				logger.Reopen()
+				// Reopen activity log
+				setActivityLog(conf, proxy)
+			}
+		}
+	}()
+}
+
 func main() {
 	config := flag.String("config", "microproxy.json", "proxy configuration file")
 	verbose := flag.Bool("v", false, "enable verbose debug mode")
@@ -433,33 +456,13 @@ func main() {
 	setAllowedConnectPortsHandler(conf, proxy)
 	setAllowedNetworksHandler(conf, proxy)
 	setForwardedForHeaderHandler(conf, proxy)
+	setSignalHandler(conf, proxy, logger)
 
 	proxy.OnResponse().DoFunc(
 		func(resp *http.Response, ctx *goproxy.ProxyCtx) *http.Response {
 			logger.LogResp(resp, ctx)
 			return resp
 		})
-
-	signalChannel := make(chan os.Signal)
-	signal.Notify(signalChannel, os.Interrupt, syscall.SIGUSR1)
-
-	go func() {
-		for {
-			sig := <-signalChannel
-			switch sig {
-			case os.Interrupt:
-				proxy.Logger.Println("got interrupt signal, exiting")
-				logger.Close()
-				os.Exit(0)
-			case syscall.SIGUSR1:
-				proxy.Logger.Println("got USR1 signal, reopening logs")
-				// Reopen access log
-				logger.Reopen()
-				// Reopen activity log
-				setActivityLog(conf, proxy)
-			}
-		}
-	}()
 
 	proxy.Logger.Println("starting proxy")
 
