@@ -22,12 +22,12 @@ func TestHtdigest(t *testing.T) {
 	}
 
 	data := &DigestAuthData{
-		User:     "user",
-		Realm:    "remparo",
-		Nonce:    "c8f0a8dad4b53c04c1a2c8a05210c7f7",
-		Method:   "GET",
-		URI:      "/",
-		Response: "efa26761794eae48b028c594db95d80a"}
+		user:     "user",
+		realm:    "remparo",
+		nonce:    "c8f0a8dad4b53c04c1a2c8a05210c7f7",
+		method:   "GET",
+		uri:      "/",
+		response: "efa26761794eae48b028c594db95d80a"}
 	if valid := h.Validate(data); valid != true {
 		t.Errorf("validation failed")
 	}

@@ -47,7 +47,7 @@ func TestBasicConnectAuthWithCurl(t *testing.T) {
 	defer background.Close()
 	_, proxy, proxyserver := oneShotProxy()
 	defer proxyserver.Close()
-	proxy.OnRequest().HandleConnect(BasicConnect("my_realm", func(authData *BasicAuthData) *BasicAuthResponse {
+	proxy.OnRequest().HandleConnect(basicConnect("my_realm", func(authData *BasicAuthData) *BasicAuthResponse {
 		return &BasicAuthResponse{authData.user == "user" && authData.password == "open sesame"}
 	}))
 

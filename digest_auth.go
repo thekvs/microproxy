@@ -17,16 +17,16 @@ const (
 )
 
 type DigestAuth struct {
-	Users map[string]string
+	users map[string]string
 }
 
 type DigestAuthData struct {
-	User     string
-	Realm    string
-	Nonce    string
-	Method   string
-	URI      string
-	Response string
+	user     string
+	realm    string
+	nonce    string
+	method   string
+	uri      string
+	response string
 }
 
 func makeRandomString(l int) string {
@@ -58,7 +58,7 @@ func NewDigestAuth(file io.Reader) (*DigestAuth, error) {
 		return nil, err
 	}
 
-	h := &DigestAuth{Users: make(map[string]string)}
+	h := &DigestAuth{users: make(map[string]string)}
 
 	for _, record := range records {
 		// each record has to be in form: "user:realm:md5hash"
@@ -67,7 +67,7 @@ func NewDigestAuth(file io.Reader) (*DigestAuth, error) {
 		}
 		key := record[0] + ":" + record[1]
 		value := record[2]
-		h.Users[key] = value
+		h.users[key] = value
 	}
 
 	rand.Seed(time.Now().UnixNano())
@@ -76,16 +76,16 @@ func NewDigestAuth(file io.Reader) (*DigestAuth, error) {
 }
 
 func (h *DigestAuth) Validate(data *DigestAuthData) bool {
-	lookupKey := data.User + ":" + data.Realm
-	ha1, exists := h.Users[lookupKey]
+	lookupKey := data.user + ":" + data.realm
+	ha1, exists := h.users[lookupKey]
 	if !exists {
 		return false
 	}
 
-	ha2 := fmt.Sprintf("%x", md5.Sum([]byte(data.Method+":"+data.URI)))
-	realResponse := fmt.Sprintf("%x", md5.Sum([]byte(ha1+":"+data.Nonce+":"+ha2)))
+	ha2 := fmt.Sprintf("%x", md5.Sum([]byte(data.method+":"+data.uri)))
+	realResponse := fmt.Sprintf("%x", md5.Sum([]byte(ha1+":"+data.nonce+":"+ha2)))
 
-	if data.Response == realResponse {
+	if data.response == realResponse {
 		return true
 	}
 
