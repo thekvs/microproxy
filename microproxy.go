@@ -428,13 +428,13 @@ func main() {
 			if err != nil {
 				proxy.Logger.Fatalf("couldn't create basic auth structure: %v\n", err)
 			}
-			ProxyBasic(proxy, conf.AuthRealm, makeBasicAuthValidator(auth))
+			setProxyBasicAuth(proxy, conf.AuthRealm, makeBasicAuthValidator(auth))
 		} else {
 			auth, err := NewDigestAuthFromFile(conf.AuthFile)
 			if err != nil {
 				proxy.Logger.Fatalf("couldn't create digest auth structure: %v\n", err)
 			}
-			ProxyDigest(proxy, conf.AuthRealm, makeDigestAuthValidator(auth))
+			setProxyDigestAuth(proxy, conf.AuthRealm, makeDigestAuthValidator(auth))
 		}
 	}
 

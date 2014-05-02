@@ -204,12 +204,12 @@ func digestConnect(realm string, authFunc DigestAuthFunc) goproxy.HttpsHandler {
 	})
 }
 
-func ProxyBasic(proxy *goproxy.ProxyHttpServer, realm string, authFunc BasicAuthFunc) {
+func setProxyBasicAuth(proxy *goproxy.ProxyHttpServer, realm string, authFunc BasicAuthFunc) {
 	proxy.OnRequest().Do(Basic(realm, authFunc))
 	proxy.OnRequest().HandleConnect(basicConnect(realm, authFunc))
 }
 
-func ProxyDigest(proxy *goproxy.ProxyHttpServer, realm string, authFunc DigestAuthFunc) {
+func setProxyDigestAuth(proxy *goproxy.ProxyHttpServer, realm string, authFunc DigestAuthFunc) {
 	proxy.OnRequest().Do(Digest(realm, authFunc))
 	proxy.OnRequest().HandleConnect(digestConnect(realm, authFunc))
 }
