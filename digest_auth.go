@@ -17,7 +17,9 @@ const (
 )
 
 type DigestAuth struct {
-	users map[string]string
+	users  map[string]string
+	// issued nonce values
+	nonces map[string]bool
 }
 
 type DigestAuthData struct {
@@ -58,7 +60,7 @@ func NewDigestAuth(file io.Reader) (*DigestAuth, error) {
 		return nil, err
 	}
 
-	h := &DigestAuth{users: make(map[string]string)}
+	h := &DigestAuth{users: make(map[string]string), nonces: make(map[string]bool)}
 
 	for _, record := range records {
 		// each record has to be in form: "user:realm:md5hash"
@@ -82,6 +84,11 @@ func (h *DigestAuth) Validate(data *DigestAuthData) bool {
 		return false
 	}
 
+	_, nonceExists := h.nonces[data.nonce]
+	if !nonceExists {
+		return false
+	}
+
 	ha2 := fmt.Sprintf("%x", md5.Sum([]byte(data.method+":"+data.uri)))
 	realResponse := fmt.Sprintf("%x", md5.Sum([]byte(ha1+":"+data.nonce+":"+ha2)))
 
@@ -93,8 +100,21 @@ func (h *DigestAuth) Validate(data *DigestAuthData) bool {
 }
 
 func (h *DigestAuth) NewNonce() string {
-	s := makeRandomString(100)
-	nonce := fmt.Sprintf("%x", md5.Sum([]byte(s)))
+	var nonce string
+
+	for {
+		rs := makeRandomString(100)
+		nonce = fmt.Sprintf("%x", md5.Sum([]byte(rs)))
+		_, exists := h.nonces[nonce]
+		if !exists {
+			h.addNonce(nonce)
+			break
+		}
+	}
 
 	return nonce
+}
+
+func (h *DigestAuth) addNonce(nonce string) {
+	h.nonces[nonce] = true
 }
