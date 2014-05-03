@@ -446,19 +446,7 @@ func setAuthenticationHandler(conf *Configuration, proxy *goproxy.ProxyHttpServe
 	}
 }
 
-func main() {
-	config := flag.String("config", "microproxy.json", "proxy configuration file")
-	verbose := flag.Bool("v", false, "enable verbose debug mode")
-
-	flag.Parse()
-
-	conf := NewConfiguration(*config)
-
-	proxy := createProxy(conf)
-	proxy.Verbose = *verbose
-
-	logger := NewLogger(conf)
-
+func setLoggingHandler(proxy *goproxy.ProxyHttpServer, logger *HttpLogger) {
 	proxy.OnRequest().HandleConnectFunc(
 		func(host string, ctx *goproxy.ProxyCtx) (*goproxy.ConnectAction, string) {
 			if ctx.Req == nil {
@@ -474,16 +462,31 @@ func main() {
 			return goproxy.OkConnect, host
 		})
 
-	setAllowedConnectPortsHandler(conf, proxy)
-	setAllowedNetworksHandler(conf, proxy)
-	setForwardedForHeaderHandler(conf, proxy)
-	setSignalHandler(conf, proxy, logger)
-
 	proxy.OnResponse().DoFunc(
 		func(resp *http.Response, ctx *goproxy.ProxyCtx) *http.Response {
 			logger.LogResp(resp, ctx)
 			return resp
 		})
+}
+
+func main() {
+	config := flag.String("config", "microproxy.json", "proxy configuration file")
+	verbose := flag.Bool("v", false, "enable verbose debug mode")
+
+	flag.Parse()
+
+	conf := NewConfiguration(*config)
+
+	proxy := createProxy(conf)
+	proxy.Verbose = *verbose
+
+	logger := NewLogger(conf)
+
+	setLoggingHandler(proxy, logger)
+	setAllowedConnectPortsHandler(conf, proxy)
+	setAllowedNetworksHandler(conf, proxy)
+	setForwardedForHeaderHandler(conf, proxy)
+	setSignalHandler(conf, proxy, logger)
 
 	// To be called first while processing handlers' stack,
 	// has to be placed last in the source code.
