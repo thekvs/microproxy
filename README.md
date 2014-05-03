@@ -1,10 +1,10 @@
 [![Build Status](https://travis-ci.org/thekvs/microproxy.svg?branch=master)](https://travis-ci.org/thekvs/microproxy)
 ## About
-microproxy is a minimalistic non-caching HTTP/HTTPS proxy server.
+```microproxy``` is a minimalistic non-caching HTTP/HTTPS proxy server.
 
 ## Main features
 * Single executable with no external dependencies.
-* Basic/Digest auth. methods.
+* Basic and Digest access authentication methods.
 * IP-based black and white access lists.
 * Ability to log all requests.
 * Ability to tweak X-Forwarded-For header.
