@@ -428,19 +428,7 @@ func setSignalHandler(conf *Configuration, proxy *goproxy.ProxyHttpServer, logge
 	}()
 }
 
-func main() {
-	config := flag.String("config", "microproxy.json", "proxy configuration file")
-	verbose := flag.Bool("v", false, "enable verbose debug mode")
-
-	flag.Parse()
-
-	conf := NewConfiguration(*config)
-
-	proxy := createProxy(conf)
-	proxy.Verbose = *verbose
-
-	logger := NewLogger(conf)
-
+func setAuthenticationHandler(conf *Configuration, proxy *goproxy.ProxyHttpServer) {
 	if conf.AuthFile != "" {
 		if conf.AuthType == "basic" {
 			auth, err := NewBasicAuthFromFile(conf.AuthFile)
@@ -456,6 +444,20 @@ func main() {
 			setProxyDigestAuth(proxy, conf.AuthRealm, makeDigestAuthValidator(auth))
 		}
 	}
+}
+
+func main() {
+	config := flag.String("config", "microproxy.json", "proxy configuration file")
+	verbose := flag.Bool("v", false, "enable verbose debug mode")
+
+	flag.Parse()
+
+	conf := NewConfiguration(*config)
+
+	proxy := createProxy(conf)
+	proxy.Verbose = *verbose
+
+	logger := NewLogger(conf)
 
 	proxy.OnRequest().HandleConnectFunc(
 		func(host string, ctx *goproxy.ProxyCtx) (*goproxy.ConnectAction, string) {
@@ -482,6 +484,10 @@ func main() {
 			logger.LogResp(resp, ctx)
 			return resp
 		})
+
+	// To be called first while processing handlers' stack,
+	// has to be placed last in the source code.
+	setAuthenticationHandler(conf, proxy)
 
 	proxy.Logger.Println("starting proxy")
 
