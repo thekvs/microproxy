@@ -26,6 +26,7 @@ const (
 const (
 	validateUser int = iota
 	getNonce     int = iota
+	maintPing    int = iota
 )
 
 // Digest auth. resp status
@@ -33,6 +34,7 @@ const (
 	authOk     int = iota
 	authFailed int = iota
 	nonceOk    int = iota
+	maintOk    int = iota
 )
 
 const proxyForwardedForHeader = "X-Forwarded-For"
@@ -85,6 +87,7 @@ func makeBasicAuthValidator(auth *BasicAuth) BasicAuthFunc {
 
 func makeDigestAuthValidator(auth *DigestAuth) DigestAuthFunc {
 	channel := make(chan *DigestAuthRequest)
+
 	processor := func() {
 		for e := range channel {
 			var response *DigestAuthResponse
@@ -99,6 +102,9 @@ func makeDigestAuthValidator(auth *DigestAuth) DigestAuthFunc {
 			case getNonce:
 				nonce := auth.NewNonce()
 				response = &DigestAuthResponse{status: nonceOk, data: nonce}
+			case maintPing:
+				auth.expireNonces()
+				response = &DigestAuthResponse{status: maintOk}
 			default:
 				panic("unexpected operation type")
 			}
@@ -106,15 +112,28 @@ func makeDigestAuthValidator(auth *DigestAuth) DigestAuthFunc {
 		}
 	}
 
-	go processor()
+	maintPinger := func() {
+		for {
+			request := &DigestAuthRequest{op: maintPing, respChannel: make(chan *DigestAuthResponse)}
+			channel <- request
+			response := <-request.respChannel
+			if response.status != maintOk {
+				log.Fatal("unexpected status")
+			}
+			time.Sleep(30 * time.Minute)
+		}
+	}
 
-	f := func(authData *DigestAuthData, op int) *DigestAuthResponse {
+	go processor()
+	go maintPinger()
+
+	authFunc := func(authData *DigestAuthData, op int) *DigestAuthResponse {
 		request := &DigestAuthRequest{data: authData, op: op, respChannel: make(chan *DigestAuthResponse)}
 		channel <- request
 		return <-request.respChannel
 	}
 
-	return f
+	return authFunc
 }
 
 func fprintf(nr *int64, err *error, w io.Writer, pat string, a ...interface{}) {

@@ -12,14 +12,19 @@ import (
 )
 
 const (
-	chars        string = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789"
-	defaultNonce string = "0e996583b4206e9685e5d69e2af46469"
+	chars                    = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789"
+	maxNonceInactiveInterval = 12 * time.Hour
 )
+
+type NonceInfo struct {
+	issued   time.Time
+	lastUsed time.Time
+}
 
 type DigestAuth struct {
 	users map[string]string
 	// issued nonce values
-	nonces map[string]bool
+	nonces map[string](*NonceInfo)
 }
 
 type DigestAuthData struct {
@@ -60,7 +65,7 @@ func NewDigestAuth(file io.Reader) (*DigestAuth, error) {
 		return nil, err
 	}
 
-	h := &DigestAuth{users: make(map[string]string), nonces: make(map[string]bool)}
+	h := &DigestAuth{users: make(map[string]string), nonces: make(map[string](*NonceInfo))}
 
 	for _, record := range records {
 		// each record has to be in form: "user:realm:md5hash"
@@ -84,7 +89,7 @@ func (h *DigestAuth) Validate(data *DigestAuthData) bool {
 		return false
 	}
 
-	_, nonceExists := h.nonces[data.nonce]
+	nonceInfo, nonceExists := h.nonces[data.nonce]
 	if !nonceExists {
 		return false
 	}
@@ -93,6 +98,7 @@ func (h *DigestAuth) Validate(data *DigestAuthData) bool {
 	realResponse := fmt.Sprintf("%x", md5.Sum([]byte(ha1+":"+data.nonce+":"+ha2)))
 
 	if data.response == realResponse {
+		nonceInfo.lastUsed = time.Now()
 		return true
 	}
 
@@ -116,5 +122,15 @@ func (h *DigestAuth) NewNonce() string {
 }
 
 func (h *DigestAuth) addNonce(nonce string) {
-	h.nonces[nonce] = true
+	h.nonces[nonce] = &NonceInfo{time.Now(), time.Now()}
+}
+
+func (h *DigestAuth) expireNonces() {
+	currentTime := time.Now()
+	limit := currentTime.Add(-maxNonceInactiveInterval)
+	for key, value := range h.nonces {
+		if value.lastUsed.Before(limit) {
+			delete(h.nonces, key)
+		}
+	}
 }
