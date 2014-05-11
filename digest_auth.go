@@ -8,6 +8,7 @@ import (
 	"io"
 	"math/rand"
 	"os"
+	"strconv"
 	"time"
 )
 
@@ -17,8 +18,9 @@ const (
 )
 
 type NonceInfo struct {
-	issued   time.Time
-	lastUsed time.Time
+	issued           time.Time
+	lastUsed         time.Time
+	lastNonceCounter uint64
 }
 
 type DigestAuth struct {
@@ -34,6 +36,9 @@ type DigestAuthData struct {
 	method   string
 	uri      string
 	response string
+	qop      string
+	nc       string
+	cnonce   string
 }
 
 func makeRandomString(l int) string {
@@ -94,11 +99,23 @@ func (h *DigestAuth) Validate(data *DigestAuthData) bool {
 		return false
 	}
 
+	nc, err := strconv.ParseUint(data.nc, 16, 64)
+	if err != nil {
+		return false
+	}
+
+	// reply attack ?
+	if nc == nonceInfo.lastNonceCounter {
+		return false
+	}
+
 	ha2 := fmt.Sprintf("%x", md5.Sum([]byte(data.method+":"+data.uri)))
-	realResponse := fmt.Sprintf("%x", md5.Sum([]byte(ha1+":"+data.nonce+":"+ha2)))
+	s := ha1 + ":" + data.nonce + ":" + data.nc + ":" + data.cnonce + ":" + data.qop + ":" + ha2
+	realResponse := fmt.Sprintf("%x", md5.Sum([]byte(s)))
 
 	if data.response == realResponse {
 		nonceInfo.lastUsed = time.Now()
+		nonceInfo.lastNonceCounter = nc
 		return true
 	}
 
@@ -122,7 +139,7 @@ func (h *DigestAuth) NewNonce() string {
 }
 
 func (h *DigestAuth) addNonce(nonce string) {
-	h.nonces[nonce] = &NonceInfo{time.Now(), time.Now()}
+	h.nonces[nonce] = &NonceInfo{time.Now(), time.Now(), 0}
 }
 
 func (h *DigestAuth) expireNonces() {

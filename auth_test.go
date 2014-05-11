@@ -1,20 +1,37 @@
 package main
 
 import (
+	"bytes"
+	"crypto/md5"
 	"encoding/base64"
+	"fmt"
 	"io"
 	"io/ioutil"
-	"net"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
-	"os"
 	"os/exec"
-	"os/signal"
-	"sync/atomic"
+	"regexp"
+	"strings"
 	"testing"
 
 	"github.com/elazarl/goproxy"
+)
+
+// >>> import hashlib
+// >>> ha1 = hashlib.md5("user:my_realm:open sesame").hexdigest()
+// >>> ha1
+// 'e0d80a524f34d30b658136e2e89c1677'
+const (
+	user     = "user"
+	password = "open sesame"
+	realm    = "my_realm"
+	ha1      = "e0d80a524f34d30b658136e2e89c1677"
+	nc       = "00000001"
+	cnonce   = "7e1d7e39d76092ea"
+	uri      = "/"
+	method   = "GET"
+	qop      = "auth"
 )
 
 type ConstantHanlder string
@@ -43,25 +60,31 @@ func times(n int, s string) string {
 
 func TestBasicConnectAuthWithCurl(t *testing.T) {
 	expected := ":c>"
+
 	background := httptest.NewTLSServer(ConstantHanlder(expected))
 	defer background.Close()
+
 	_, proxy, proxyserver := oneShotProxy()
 	defer proxyserver.Close()
-	proxy.OnRequest().HandleConnect(basicConnect("my_realm", func(authData *BasicAuthData) *BasicAuthResponse {
-		return &BasicAuthResponse{authData.user == "user" && authData.password == "open sesame"}
+
+	proxy.OnRequest().HandleConnect(basicConnect(realm, func(authData *BasicAuthData) *BasicAuthResponse {
+		return &BasicAuthResponse{authData.user == user && authData.password == password}
 	}))
 
+	authString := user + ":" + password
 	cmd := exec.Command("curl",
 		"--silent", "--show-error", "--insecure",
 		"-x", proxyserver.URL,
-		"-U", "user:open sesame",
+		"-U", authString,
 		"-p",
 		"--url", background.URL+"/[1-3]",
 	)
+
 	out, err := cmd.CombinedOutput() // if curl got error, it'll show up in stderr
 	if err != nil {
 		t.Fatal(err, string(out))
 	}
+
 	finalexpected := times(3, expected)
 	if string(out) != finalexpected {
 		t.Error("Expected", finalexpected, "got", string(out))
@@ -70,24 +93,30 @@ func TestBasicConnectAuthWithCurl(t *testing.T) {
 
 func TestBasicAuthWithCurl(t *testing.T) {
 	expected := ":c>"
+
 	background := httptest.NewServer(ConstantHanlder(expected))
 	defer background.Close()
+
 	_, proxy, proxyserver := oneShotProxy()
 	defer proxyserver.Close()
-	proxy.OnRequest().Do(Basic("my_realm", func(authData *BasicAuthData) *BasicAuthResponse {
-		return &BasicAuthResponse{authData.user == "user" && authData.password == "open sesame"}
+
+	proxy.OnRequest().Do(Basic(realm, func(authData *BasicAuthData) *BasicAuthResponse {
+		return &BasicAuthResponse{authData.user == user && authData.password == password}
 	}))
 
+	authString := user + ":" + password
 	cmd := exec.Command("curl",
 		"--silent", "--show-error",
 		"-x", proxyserver.URL,
-		"-U", "user:open sesame",
+		"-U", authString,
 		"--url", background.URL+"/[1-3]",
 	)
+
 	out, err := cmd.CombinedOutput() // if curl got error, it'll show up in stderr
 	if err != nil {
 		t.Fatal(err, string(out))
 	}
+
 	finalexpected := times(3, expected)
 	if string(out) != finalexpected {
 		t.Error("Expected", finalexpected, "got", string(out))
@@ -96,12 +125,15 @@ func TestBasicAuthWithCurl(t *testing.T) {
 
 func TestBasicAuth(t *testing.T) {
 	expected := "hello"
+
 	background := httptest.NewServer(ConstantHanlder(expected))
 	defer background.Close()
+
 	client, proxy, proxyserver := oneShotProxy()
 	defer proxyserver.Close()
-	proxy.OnRequest().Do(Basic("my_realm", func(authData *BasicAuthData) *BasicAuthResponse {
-		return &BasicAuthResponse{authData.user == "user" && authData.password == "open sesame"}
+
+	proxy.OnRequest().Do(Basic(realm, func(authData *BasicAuthData) *BasicAuthResponse {
+		return &BasicAuthResponse{authData.user == user && authData.password == password}
 	}))
 
 	// without auth
@@ -109,7 +141,8 @@ func TestBasicAuth(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if resp.Header.Get("Proxy-Authenticate") != "Basic realm=my_realm" {
+	expectedProxyAuthenticate := fmt.Sprintf("Basic realm=%s", realm)
+	if resp.Header.Get("Proxy-Authenticate") != expectedProxyAuthenticate {
 		t.Error("Expected Proxy-Authenticate header got", resp.Header.Get("Proxy-Authenticate"))
 	}
 	if resp.StatusCode != 407 {
@@ -121,8 +154,9 @@ func TestBasicAuth(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+	authString := user + ":" + password
 	req.Header.Set("Proxy-Authorization",
-		"Basic "+base64.StdEncoding.EncodeToString([]byte("user:open sesame")))
+		"Basic "+base64.StdEncoding.EncodeToString([]byte(authString)))
 	resp, err = client.Do(req)
 	if err != nil {
 		t.Fatal(err)
@@ -139,34 +173,110 @@ func TestBasicAuth(t *testing.T) {
 	}
 }
 
-func TestWithBrowser(t *testing.T) {
-	// an easy way to check if auth works with webserver
-	// to test, run with
-	// $ go test -run TestWithBrowser -- server
-	// configure a browser to use the printed proxy address, use the proxy
-	// and exit with Ctrl-C. It will throw error if your haven't acutally used the proxy
-	if os.Args[len(os.Args)-1] != "server" {
-		return
+func TestDigestAuth(t *testing.T) {
+	expected := "Hello, World!"
+
+	background := httptest.NewServer(ConstantHanlder(expected))
+	defer background.Close()
+
+	client, proxy, proxyserver := oneShotProxy()
+	defer proxyserver.Close()
+
+	s := user + ":" + realm + ":" + ha1 + "\n"
+	file := bytes.NewBuffer([]byte(s))
+	auth, err := NewDigestAuth(file)
+	if err != nil {
+		t.Fatal("couldn't create digest auth structure: %v", err)
 	}
-	proxy := goproxy.NewProxyHttpServer()
-	println("proxy localhost port 8082")
-	access := int32(0)
-	proxy.OnRequest().Do(Basic("my_realm", func(authData *BasicAuthData) *BasicAuthResponse {
-		atomic.AddInt32(&access, 1)
-		return &BasicAuthResponse{authData.user == "user" && authData.password == "1234"}
-	}))
-	l, err := net.Listen("tcp", "localhost:8082")
+	setProxyDigestAuth(proxy, realm, makeDigestAuthValidator(auth))
+
+	// without auth
+	resp, err := client.Get(background.URL)
 	if err != nil {
 		t.Fatal(err)
 	}
-	ch := make(chan os.Signal)
-	signal.Notify(ch, os.Interrupt)
-	go func() {
-		<-ch
-		l.Close()
-	}()
-	http.Serve(l, proxy)
-	if access <= 0 {
-		t.Error("No one accessed the proxy")
+
+	header := resp.Header.Get("Proxy-Authenticate")
+	if len(header) == 0 {
+		t.Error("Couldn't get expected Proxy-Authenticate header")
+	}
+
+	splitted := strings.SplitN(header, " ", 2)
+	if splitted[0] != "Digest" {
+		t.Error("Expected Digest Proxy-Authenticate header got", header)
+	}
+	if resp.StatusCode != 407 {
+		t.Error("Expected status 407 Proxy Authentication Required, got", resp.Status)
+	}
+
+	nonceRegexp := regexp.MustCompile("nonce=\"(.*?)\"")
+	nonce := nonceRegexp.FindAllStringSubmatch(splitted[1], -1)[0][1]
+
+	s = method + ":" + uri
+	ha2 := fmt.Sprintf("%x", md5.Sum([]byte(s)))
+	s = ha1 + ":" + nonce + ":" + nc + ":" + cnonce + ":" + qop + ":" + ha2
+	response := fmt.Sprintf("%x", md5.Sum([]byte(s)))
+
+	proxyAuthorizationHeader := fmt.Sprintf("Digest username=\"%s\", realm=\"%s\", nonce=\"%s\", uri=\"%s\", response=\"%s\", qop=%s, nc=%s, cnonce=\"%s\"",
+		user, realm, nonce, uri, response, qop, nc, cnonce)
+
+	// with auth
+	req, err := http.NewRequest("GET", background.URL, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	req.Header.Set("Proxy-Authorization", proxyAuthorizationHeader)
+
+	resp, err = client.Do(req)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if resp.StatusCode != 200 {
+		t.Error("Expected status 200 OK, got", resp.Status)
+	}
+
+	msg, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if string(msg) != expected {
+		t.Errorf("Expected '%s', actual '%s'", expected, string(msg))
+	}
+}
+
+func TestDigestAuthWithPython(t *testing.T) {
+	expected := "Hello, World!"
+
+	background := httptest.NewServer(ConstantHanlder(expected))
+	defer background.Close()
+
+	_, proxy, proxyserver := oneShotProxy()
+	defer proxyserver.Close()
+
+	s := user + ":" + realm + ":" + ha1 + "\n"
+	file := bytes.NewBuffer([]byte(s))
+	auth, err := NewDigestAuth(file)
+	if err != nil {
+		t.Fatal("couldn't create digest auth structure: %v", err)
+	}
+	setProxyDigestAuth(proxy, realm, makeDigestAuthValidator(auth))
+
+	cmd := exec.Command("python",
+		"proxy-digest-auth-test.py",
+		"--proxy", proxyserver.URL,
+		"--user", user,
+		"--password", password,
+		"--url", background.URL,
+	)
+
+	out, err := cmd.CombinedOutput()
+	if err != nil {
+		t.Fatal(err, string(out))
+	}
+
+	// python adds '\n' so we need to remove it
+	result := strings.Trim(string(out), "\r\n")
+	if result != expected {
+		t.Error("Expected", expected, "got", result)
 	}
 }

@@ -17,8 +17,10 @@ type DigestAuthFunc func(authData *DigestAuthData, op int) *DigestAuthResponse
 
 var unauthorizedMsg = []byte("407 Proxy Authentication Required")
 
-const proxyAuthorizatonHeader = "Proxy-Authorization"
-const proxyAuthenticateHeader = "Proxy-Authenticate"
+const (
+	proxyAuthorizatonHeader = "Proxy-Authorization"
+	proxyAuthenticateHeader = "Proxy-Authenticate"
+)
 
 func basicUnauthorized(req *http.Request, realm string) *http.Response {
 	header := fmt.Sprintf("Basic realm=%s", realm)
@@ -37,7 +39,7 @@ func basicUnauthorized(req *http.Request, realm string) *http.Response {
 func digestUnauthorized(req *http.Request, realm string, authFunc DigestAuthFunc) *http.Response {
 	authResult := authFunc(nil, getNonce)
 	nonce := authResult.data
-	header := fmt.Sprintf("Digest realm=\"%s\", nonce=\"%s\"", realm, nonce)
+	header := fmt.Sprintf("Digest realm=\"%s\", qop=auth, nonce=\"%s\"", realm, nonce)
 
 	return &http.Response{
 		StatusCode:    407,
@@ -59,14 +61,44 @@ func getDigestAuthData(req *http.Request) *DigestAuthData {
 	}
 
 	m := make(map[string]string)
-	tokens := regexp.MustCompile("\",").Split(authHeader[1], -1)
 
-	for _, v := range tokens {
-		s := strings.Trim(v, " \r\n")
-		kv := strings.SplitN(s, "=", 2)
-		if len(kv) != 2 {
-			continue
+	quotedStringsRegexp := regexp.MustCompile("\"(.*?)\"")
+	commasRegexp := regexp.MustCompile(",")
+
+	h := authHeader[1]
+	quotes := quotedStringsRegexp.FindAllStringSubmatchIndex(h, -1)
+	commas := commasRegexp.FindAllStringSubmatchIndex(h, -1)
+
+	separateCommas := make([]int, 0)
+	var quotedComma bool
+
+	for _, commaIndices := range commas {
+		commaIndex := commaIndices[0]
+		quotedComma = false
+		for _, quoteIndices := range quotes {
+			if len(quoteIndices) == 4 && commaIndex >= quoteIndices[2] && commaIndex <= quoteIndices[3] {
+				quotedComma = true
+				break
+			}
 		}
+		if !quotedComma {
+			separateCommas = append(separateCommas, commaIndex)
+		}
+	}
+
+	tokens := make([]string, 0)
+	s := 0
+
+	for _, val := range separateCommas {
+		e := val
+		tokens = append(tokens, strings.Trim(h[s:e], " "))
+		s = e + 1
+	}
+
+	tokens = append(tokens, strings.Trim(h[s:len(h)], " "))
+
+	for _, token := range tokens {
+		kv := strings.SplitN(token, "=", 2)
 		m[kv[0]] = strings.Trim(kv[1], "\"")
 	}
 
@@ -90,6 +122,18 @@ func getDigestAuthData(req *http.Request) *DigestAuthData {
 
 	if v, ok := m["response"]; ok {
 		data.response = v
+	}
+
+	if v, ok := m["qop"]; ok {
+		data.qop = v
+	}
+
+	if v, ok := m["nc"]; ok {
+		data.nc = v
+	}
+
+	if v, ok := m["cnonce"]; ok {
+		data.cnonce = v
 	}
 
 	data.method = req.Method
@@ -148,7 +192,7 @@ func digestAuth(req *http.Request, authFunc DigestAuthFunc) (bool, *DigestAuthDa
 		panic("unreachable point")
 	}
 
-	return false, data
+	//return false, data
 }
 
 func Basic(realm string, authFunc BasicAuthFunc) goproxy.ReqHandler {
