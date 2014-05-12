@@ -25,7 +25,7 @@ def main():
     password_manager = urllib2.HTTPPasswordMgrWithDefaultRealm()
     password_manager.add_password(None, args.url, args.user, args.password)
     auth_handler = urllib2.ProxyDigestAuthHandler(password_manager)
-    proxy_support = urllib2.ProxyHandler({"http" : args.proxy})
+    proxy_support = urllib2.ProxyHandler({"http": args.proxy})
     opener = urllib2.build_opener(proxy_support, auth_handler)
     urllib2.install_opener(opener)
     handle = urllib2.urlopen(args.url)
