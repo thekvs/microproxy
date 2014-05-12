@@ -16,8 +16,8 @@ func compareSlices(s1 []string, s2 []string) bool {
 	return true
 }
 
-func Test(t *testing.T) {
-	var expected = Configuration{
+func TestConfigFile(t *testing.T) {
+	expected := Configuration{
 		Listen:              "127.0.0.1:3129",
 		AccessLog:           "/tmp/microproxy.access.log",
 		AuthType:            "basic",
