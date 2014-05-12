@@ -8,17 +8,17 @@ import (
 )
 
 type Configuration struct {
-	Listen              string
-	AccessLog           string
-	ActivityLog         string
-	AllowedConnectPorts []string
-	AllowedNetworks     []string
-	DisallowedNetworks  []string
-	AuthRealm           string
-	AuthType            string
-	AuthFile            string
-	ForwardedFor        string
-	BindIP              string
+	Listen              string   `json:"listen"`
+	AccessLog           string   `json:"access_log"`
+	ActivityLog         string   `json:"activity_log"`
+	AllowedConnectPorts []string `json:"allowed_connect_ports"`
+	AllowedNetworks     []string `json:"allowed_networks"`
+	DisallowedNetworks  []string `json:"disallowed_networks"`
+	AuthRealm           string   `json:"auth_realm"`
+	AuthType            string   `json:"auth_type"`
+	AuthFile            string   `json:"auth_file"`
+	ForwardedFor        string   `json:"forwarded_for"`
+	BindIP              string   `json:"bind_ip"`
 }
 
 func validateNetworks(networks []string) {
