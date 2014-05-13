@@ -74,9 +74,9 @@ func TestBasicConnectAuthWithCurl(t *testing.T) {
 	authString := user + ":" + password
 	cmd := exec.Command("curl",
 		"--silent", "--show-error", "--insecure",
-		"-x", proxyserver.URL,
-		"-U", authString,
-		"-p",
+		"--proxy", proxyserver.URL,
+		"--proxy-user", authString,
+		"--proxytunnel",
 		"--url", background.URL+"/[1-3]",
 	)
 
@@ -107,8 +107,8 @@ func TestBasicAuthWithCurl(t *testing.T) {
 	authString := user + ":" + password
 	cmd := exec.Command("curl",
 		"--silent", "--show-error",
-		"-x", proxyserver.URL,
-		"-U", authString,
+		"--proxy", proxyserver.URL,
+		"--proxy-user", authString,
 		"--url", background.URL+"/[1-3]",
 	)
 
