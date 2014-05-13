@@ -280,3 +280,41 @@ func TestDigestAuthWithPython(t *testing.T) {
 		t.Error("Expected", expected, "got", result)
 	}
 }
+
+func TestDigestAuthWithCurl(t *testing.T) {
+	expected := "Hello, World!"
+
+	background := httptest.NewServer(ConstantHanlder(expected))
+	defer background.Close()
+
+	_, proxy, proxyserver := oneShotProxy()
+	defer proxyserver.Close()
+
+	s := user + ":" + realm + ":" + ha1 + "\n"
+	file := bytes.NewBuffer([]byte(s))
+	auth, err := NewDigestAuth(file)
+	if err != nil {
+		t.Fatal("couldn't create digest auth structure: %v", err)
+	}
+	setProxyDigestAuth(proxy, realm, makeDigestAuthValidator(auth))
+
+	authString := user + ":" + password
+	cmd := exec.Command("curl",
+		"--silent", "--show-error",
+		"--proxy-digest",
+		"--proxy", proxyserver.URL,
+		"--proxy-user", authString,
+		"--url", background.URL,
+	)
+
+	out, err := cmd.CombinedOutput() // if curl got error, it'll show up in stderr
+	if err != nil {
+		t.Fatal(err, string(out))
+	}
+
+	result := string(out)
+
+	if result != expected {
+		t.Error("Expected", expected, "got", result)
+	}
+}
