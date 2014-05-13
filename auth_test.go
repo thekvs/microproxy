@@ -67,13 +67,19 @@ func TestBasicConnectAuthWithCurl(t *testing.T) {
 	_, proxy, proxyserver := oneShotProxy()
 	defer proxyserver.Close()
 
-	proxy.OnRequest().HandleConnect(basicConnect(realm, func(authData *BasicAuthData) *BasicAuthResponse {
-		return &BasicAuthResponse{authData.user == user && authData.password == password}
-	}))
+	s := user + ":" + password + "\n"
+	file := bytes.NewBuffer([]byte(s))
+	auth, err := NewBasicAuth(file)
+	if err != nil {
+		t.Fatal("couldn't create digest auth structure: %v", err)
+	}
+	setProxyBasicAuth(proxy, realm, makeBasicAuthValidator(auth))
 
 	authString := user + ":" + password
 	cmd := exec.Command("curl",
-		"--silent", "--show-error", "--insecure",
+		"--silent",
+		"--show-error",
+		"--insecure",
 		"--proxy", proxyserver.URL,
 		"--proxy-user", authString,
 		"--proxytunnel",
@@ -100,13 +106,18 @@ func TestBasicAuthWithCurl(t *testing.T) {
 	_, proxy, proxyserver := oneShotProxy()
 	defer proxyserver.Close()
 
-	proxy.OnRequest().Do(Basic(realm, func(authData *BasicAuthData) *BasicAuthResponse {
-		return &BasicAuthResponse{authData.user == user && authData.password == password}
-	}))
+	s := user + ":" + password + "\n"
+	file := bytes.NewBuffer([]byte(s))
+	auth, err := NewBasicAuth(file)
+	if err != nil {
+		t.Fatal("couldn't create digest auth structure: %v", err)
+	}
+	setProxyBasicAuth(proxy, realm, makeBasicAuthValidator(auth))
 
 	authString := user + ":" + password
 	cmd := exec.Command("curl",
-		"--silent", "--show-error",
+		"--silent",
+		"--show-error",
 		"--proxy", proxyserver.URL,
 		"--proxy-user", authString,
 		"--url", background.URL+"/[1-3]",
@@ -132,9 +143,13 @@ func TestBasicAuth(t *testing.T) {
 	client, proxy, proxyserver := oneShotProxy()
 	defer proxyserver.Close()
 
-	proxy.OnRequest().Do(Basic(realm, func(authData *BasicAuthData) *BasicAuthResponse {
-		return &BasicAuthResponse{authData.user == user && authData.password == password}
-	}))
+	s := user + ":" + password + "\n"
+	file := bytes.NewBuffer([]byte(s))
+	auth, err := NewBasicAuth(file)
+	if err != nil {
+		t.Fatal("couldn't create digest auth structure: %v", err)
+	}
+	setProxyBasicAuth(proxy, realm, makeBasicAuthValidator(auth))
 
 	// without auth
 	resp, err := client.Get(background.URL)
@@ -155,8 +170,8 @@ func TestBasicAuth(t *testing.T) {
 		t.Fatal(err)
 	}
 	authString := user + ":" + password
-	req.Header.Set("Proxy-Authorization",
-		"Basic "+base64.StdEncoding.EncodeToString([]byte(authString)))
+	header := "Basic " + base64.StdEncoding.EncodeToString([]byte(authString))
+	req.Header.Set("Proxy-Authorization", header)
 	resp, err = client.Do(req)
 	if err != nil {
 		t.Fatal(err)
@@ -300,7 +315,8 @@ func TestDigestAuthWithCurl(t *testing.T) {
 
 	authString := user + ":" + password
 	cmd := exec.Command("curl",
-		"--silent", "--show-error",
+		"--silent",
+		"--show-error",
 		"--proxy-digest",
 		"--proxy", proxyserver.URL,
 		"--proxy-user", authString,
