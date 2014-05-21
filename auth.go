@@ -69,7 +69,7 @@ func getDigestAuthData(req *http.Request) *DigestAuthData {
 	quotes := quotedStringsRegexp.FindAllStringSubmatchIndex(h, -1)
 	commas := commasRegexp.FindAllStringSubmatchIndex(h, -1)
 
-	separateCommas := make([]int, 0)
+	separateCommas := make([]int, 0, 8)
 	var quotedComma bool
 
 	for _, commaIndices := range commas {
@@ -86,7 +86,7 @@ func getDigestAuthData(req *http.Request) *DigestAuthData {
 		}
 	}
 
-	tokens := make([]string, 0)
+	tokens := make([]string, 0, 10)
 	s := 0
 
 	for _, val := range separateCommas {
