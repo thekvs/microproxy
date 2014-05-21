@@ -109,8 +109,9 @@ func (h *DigestAuth) Validate(data *DigestAuthData) bool {
 		return false
 	}
 
-	ha2 := fmt.Sprintf("%x", md5.Sum([]byte(data.method+":"+data.uri)))
-	s := ha1 + ":" + data.nonce + ":" + data.nc + ":" + data.cnonce + ":" + data.qop + ":" + ha2
+	s := data.method + ":" + data.uri
+	ha2 := fmt.Sprintf("%x", md5.Sum([]byte(s)))
+	s = ha1 + ":" + data.nonce + ":" + data.nc + ":" + data.cnonce + ":" + data.qop + ":" + ha2
 	realResponse := fmt.Sprintf("%x", md5.Sum([]byte(s)))
 
 	if data.response == realResponse {
