@@ -38,6 +38,7 @@ const (
 )
 
 const proxyForwardedForHeader = "X-Forwarded-For"
+const tcpKeepAliveInterval = 1 * time.Minute
 
 type Meta struct {
 	action int
@@ -361,8 +362,14 @@ func makeCustomDial(localAddr *net.TCPAddr) func(string, string) (net.Conn, erro
 		if err != nil {
 			return nil, err
 		}
-		c, err := net.DialTCP(network, localAddr, remoteAddr)
-		return c, err
+
+		conn, err := net.DialTCP(network, localAddr, remoteAddr)
+		if err == nil {
+			conn.SetKeepAlive(true)
+			conn.SetKeepAlivePeriod(tcpKeepAliveInterval)
+		}
+
+		return conn, err
 	}
 }
 
@@ -370,25 +377,32 @@ func createProxy(conf *Configuration) *goproxy.ProxyHttpServer {
 	proxy := goproxy.NewProxyHttpServer()
 	setActivityLog(conf, proxy)
 
+	var laddr string
+
+	addressOk := true
+
 	if conf.BindIP != "" {
-		var laddr string
-		addressOk := true
 		if ip := net.ParseIP(conf.BindIP); ip != nil {
 			if ip4 := ip.To4(); ip4 != nil {
 				laddr = conf.BindIP + ":0"
 			} else if ip16 := ip.To16(); ip16 != nil {
 				laddr = "[" + conf.BindIP + "]:0"
 			} else {
-				proxy.Logger.Printf("[WARN] couldn't use \"%v\" as outgoing request address.\n", conf.BindIP)
+				proxy.Logger.Printf("WARN: couldn't use \"%v\" as outgoing request address.\n", conf.BindIP)
 				addressOk = false
 			}
 		}
-		if addressOk {
+	}
+
+	if addressOk {
+		if laddr != "" {
 			if addr, err := net.ResolveTCPAddr("tcp", laddr); err == nil {
 				proxy.Tr.Dial = makeCustomDial(addr)
 			} else {
-				proxy.Logger.Printf("[WARN] couldn't use \"%v\" as outgoing request address. %v\n", conf.BindIP, err)
+				proxy.Logger.Printf("WARN: couldn't use \"%v\" as outgoing request address. %v\n", conf.BindIP, err)
 			}
+		} else {
+			proxy.Tr.Dial = makeCustomDial(nil)
 		}
 	}
 
