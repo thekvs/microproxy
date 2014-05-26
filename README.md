@@ -13,6 +13,7 @@
 * Reasonable memory usage.
 
 ## Installing
+This project is written in [Go](http://golang.org/) programming language and to build it you need to install Go compiler and set some enviroment variables, [here is instructions how to do it](http://golang.org/doc/install). After you've installed Go, run following command in your shell:
 ```
 $ go get github.com/thekvs/microproxy
 ```
@@ -24,7 +25,7 @@ $ go get github.com/thekvs/microproxy
 * ```"access_log": "path"``` -- path to a file where to write requested through proxy urls.
 * ```"activity_log": "path"``` -- path to a file where to write debug and auxilary information.
 * ```"allowed_connect_ports": ["port1", "port2", ...]``` -- list of allowed port to CONNECT to. Default: ```["443"]```
-* ```"auth_file": "path"``` -- path to a file with users' passwords. If you use "digest" auth. scheme this file has to be in the format used by Apache's htdigest utility, for "basic" scheme it has to be in the format used by Apache's htpasswd utility with -p option, i.e. created as ```$ htpasswd -c -p auth.txt username```.
+* ```"auth_file": "path"``` -- path to a file with users' passwords. If you use "digest" auth. scheme this file has to be in the format used by Apache's [htdigest](http://httpd.apache.org/docs/2.4/programs/htdigest.html) utility, for "basic" scheme it has to be in the format used by Apache's [htpasswd](http://httpd.apache.org/docs/2.4/programs/htpasswd.html) utility with -p option, i.e. created as ```$ htpasswd -c -p auth.txt username```.
 * ```"auth_type": "type"``` -- authentication scheme type, must be either "basic" or "digest".
 * ```"auth_realm": "realmstring"``` -- realm name which is to be reported to the client for the proxy authentication scheme.
 * ```"forwarded_for": "action"``` -- specifies how to handle ```X-Forwarded-For``` HTTP protocol header. Avalible options are:
