@@ -369,7 +369,13 @@ func makeCustomDial(localAddr *net.TCPAddr) func(string, string) (net.Conn, erro
 			conn.SetKeepAlivePeriod(tcpKeepAliveInterval)
 		}
 
-		return conn, err
+		c := TConn{
+			Conn:         conn,
+			readTimeout:  defaultReadTimeout,
+			writeTimeout: defaultWriteTimeout,
+		}
+
+		return c, err
 	}
 }
 
