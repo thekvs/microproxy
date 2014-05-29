@@ -156,7 +156,7 @@ func TestBasicAuth(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	expectedProxyAuthenticate := fmt.Sprintf("Basic realm=%s", realm)
+	expectedProxyAuthenticate := fmt.Sprintf("Basic realm=\"%s\"", realm)
 	if resp.Header.Get("Proxy-Authenticate") != expectedProxyAuthenticate {
 		t.Error("Expected Proxy-Authenticate header got", resp.Header.Get("Proxy-Authenticate"))
 	}
