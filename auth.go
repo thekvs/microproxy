@@ -23,7 +23,7 @@ const (
 )
 
 func basicUnauthorized(req *http.Request, realm string) *http.Response {
-	header := fmt.Sprintf("Basic realm=%s", realm)
+	header := fmt.Sprintf("Basic realm=\"%s\"", realm)
 
 	return &http.Response{
 		StatusCode:    407,
