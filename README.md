@@ -9,14 +9,15 @@
 * IP-based black and white access lists.
 * Ability to log all requests.
 * Ability to tweak X-Forwarded-For header.
-* Ability to specify ip address for outgoing connections.
+* Ability to specify IP address for outgoing connections.
 * Reasonable memory usage.
 
 ## Installing
-This project is written in [Go](http://golang.org/) programming language and to build it you need to install Go compiler and set some enviroment variables, [here is instructions how to do it](http://golang.org/doc/install). After you've installed Go, run following command in your shell:
+This project is written in the [Go](http://golang.org/) programming language and to build it you need to install Go compiler and set some enviroment variables. [Here is instructions on how to do it](http://golang.org/doc/install). After you've done it, run the following command in your shell:
 ```
 $ go get github.com/thekvs/microproxy
 ```
+and this will build the binary in ```$GOPATH/bin```.
 
 ## Configuration file options
 ```microproxy``` uses JSON format for configuration file. Below is a list of supported configuration options.
@@ -26,7 +27,9 @@ $ go get github.com/thekvs/microproxy
 * ```"activity_log": "path"``` -- path to a file where to write debug and auxilary information.
 * ```"allowed_connect_ports": ["port1", "port2", ...]``` -- list of allowed port to CONNECT to. Default: ```["443"]```
 * ```"auth_file": "path"``` -- path to a file with users' passwords. If you use "digest" auth. scheme this file has to be in the format used by Apache's [htdigest](http://httpd.apache.org/docs/2.4/programs/htdigest.html) utility, for "basic" scheme it has to be in the format used by Apache's [htpasswd](http://httpd.apache.org/docs/2.4/programs/htpasswd.html) utility with -p option, i.e. created as ```$ htpasswd -c -p auth.txt username```.
-* ```"auth_type": "type"``` -- authentication scheme type, must be either "basic" or "digest".
+* ```"auth_type": "type"``` -- authentication scheme type. Avalible options are:
+  * ```"basic"``` -- use Basic authentication scheme.
+  * ```"digest"``` -- use Digest authentication scheme.
 * ```"auth_realm": "realmstring"``` -- realm name which is to be reported to the client for the proxy authentication scheme.
 * ```"forwarded_for": "action"``` -- specifies how to handle ```X-Forwarded-For``` HTTP protocol header. Avalible options are:
   * ```"on"``` -- set ```X-Forwarded-For``` header with client's IP address, this is a default choice.
