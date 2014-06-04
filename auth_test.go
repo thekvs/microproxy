@@ -71,7 +71,7 @@ func TestBasicConnectAuthWithCurl(t *testing.T) {
 	file := bytes.NewBuffer([]byte(s))
 	auth, err := NewBasicAuth(file)
 	if err != nil {
-		t.Fatal("couldn't create digest auth structure: %v", err)
+		t.Fatalf("couldn't create digest auth structure: %v", err)
 	}
 	setProxyBasicAuth(proxy, realm, makeBasicAuthValidator(auth))
 
@@ -110,7 +110,7 @@ func TestBasicAuthWithCurl(t *testing.T) {
 	file := bytes.NewBuffer([]byte(s))
 	auth, err := NewBasicAuth(file)
 	if err != nil {
-		t.Fatal("couldn't create digest auth structure: %v", err)
+		t.Fatalf("couldn't create digest auth structure: %v", err)
 	}
 	setProxyBasicAuth(proxy, realm, makeBasicAuthValidator(auth))
 
@@ -147,7 +147,7 @@ func TestBasicAuth(t *testing.T) {
 	file := bytes.NewBuffer([]byte(s))
 	auth, err := NewBasicAuth(file)
 	if err != nil {
-		t.Fatal("couldn't create digest auth structure: %v", err)
+		t.Fatalf("couldn't create digest auth structure: %v", err)
 	}
 	setProxyBasicAuth(proxy, realm, makeBasicAuthValidator(auth))
 
@@ -201,7 +201,7 @@ func TestDigestAuth(t *testing.T) {
 	file := bytes.NewBuffer([]byte(s))
 	auth, err := NewDigestAuth(file)
 	if err != nil {
-		t.Fatal("couldn't create digest auth structure: %v", err)
+		t.Fatalf("couldn't create digest auth structure: %v", err)
 	}
 	setProxyDigestAuth(proxy, realm, makeDigestAuthValidator(auth))
 
@@ -272,7 +272,7 @@ func TestDigestAuthWithPython(t *testing.T) {
 	file := bytes.NewBuffer([]byte(s))
 	auth, err := NewDigestAuth(file)
 	if err != nil {
-		t.Fatal("couldn't create digest auth structure: %v", err)
+		t.Fatalf("couldn't create digest auth structure: %v", err)
 	}
 	setProxyDigestAuth(proxy, realm, makeDigestAuthValidator(auth))
 
@@ -309,7 +309,7 @@ func TestDigestAuthWithCurl(t *testing.T) {
 	file := bytes.NewBuffer([]byte(s))
 	auth, err := NewDigestAuth(file)
 	if err != nil {
-		t.Fatal("couldn't create digest auth structure: %v", err)
+		t.Fatalf("couldn't create digest auth structure: %v", err)
 	}
 	setProxyDigestAuth(proxy, realm, makeDigestAuthValidator(auth))
 
