@@ -4,8 +4,6 @@ import (
 	"github.com/elazarl/goproxy"
 
 	"flag"
-	"fmt"
-	"io"
 	"log"
 	"net"
 	"net/http"
@@ -15,11 +13,6 @@ import (
 	"strings"
 	"syscall"
 	"time"
-)
-
-const (
-	appendLog int = iota
-	reopenLog int = iota
 )
 
 // Digest auth. operation type
@@ -39,14 +32,6 @@ const (
 
 const proxyForwardedForHeader = "X-Forwarded-For"
 const tcpKeepAliveInterval = 1 * time.Minute
-
-type Meta struct {
-	action int
-	req    *http.Request
-	resp   *http.Response
-	err    error
-	time   time.Time
-}
 
 type BasicAuthRequest struct {
 	data        *BasicAuthData
@@ -135,142 +120,6 @@ func makeDigestAuthValidator(auth *DigestAuth) DigestAuthFunc {
 	}
 
 	return authFunc
-}
-
-func fprintf(nr *int64, err *error, w io.Writer, pat string, a ...interface{}) {
-	if *err != nil {
-		return
-	}
-	var n int
-	n, *err = fmt.Fprintf(w, pat, a...)
-	*nr += int64(n)
-}
-
-func write(nr *int64, err *error, w io.Writer, b []byte) {
-	if *err != nil {
-		return
-	}
-	var n int
-	n, *err = w.Write(b)
-	*nr += int64(n)
-}
-
-func (m *Meta) WriteTo(w io.Writer) (nr int64, err error) {
-	if m.resp != nil {
-		if m.resp.Request != nil {
-			fprintf(&nr, &err, w,
-				"%v %v %v %v %v %v\n",
-				m.time.Format(time.RFC3339),
-				m.resp.Request.RemoteAddr,
-				m.resp.Request.Method,
-				m.resp.Request.URL,
-				m.resp.StatusCode,
-				m.resp.ContentLength)
-		} else {
-			fprintf(&nr, &err, w,
-				"%v %v %v %v %v %v\n",
-				m.time.Format(time.RFC3339),
-				"-",
-				"-",
-				"-",
-				m.resp.StatusCode,
-				m.resp.ContentLength)
-		}
-	} else if m.req != nil {
-		fprintf(&nr, &err, w,
-			"%v %v %v %v %v %v\n",
-			m.time.Format(time.RFC3339),
-			m.req.RemoteAddr,
-			m.req.Method,
-			m.req.URL,
-			"-",
-			"-")
-	}
-
-	return
-}
-
-type HttpLogger struct {
-	path        string
-	logChannel  chan *Meta
-	errorChanel chan error
-}
-
-func NewLogger(conf *Configuration) *HttpLogger {
-	var fh *os.File
-
-	if conf.AccessLog != "" {
-		var err error
-		fh, err = os.OpenFile(conf.AccessLog, os.O_APPEND|os.O_WRONLY|os.O_CREATE, 0600)
-		if err != nil {
-			log.Fatalf("Couldn't open log file: %v", err)
-		}
-	}
-
-	logger := &HttpLogger{conf.AccessLog, make(chan *Meta), make(chan error)}
-
-	go func() {
-		for m := range logger.logChannel {
-			if fh != nil {
-				switch m.action {
-				case appendLog:
-					if _, err := m.WriteTo(fh); err != nil {
-						log.Println("Can't write meta", err)
-					}
-				case reopenLog:
-					fh.Close()
-					var err error
-					fh, err = os.OpenFile(conf.AccessLog, os.O_APPEND|os.O_WRONLY|os.O_CREATE, 0600)
-					if err != nil {
-						log.Fatalf("Couldn't reopen log file: %v", err)
-					}
-				}
-			}
-		}
-		logger.errorChanel <- fh.Close()
-	}()
-
-	return logger
-}
-
-var emptyResp = &http.Response{}
-var emptyReq = &http.Request{}
-
-func (logger *HttpLogger) LogReq(req *http.Request, ctx *goproxy.ProxyCtx) {
-	if req == nil {
-		req = emptyReq
-	}
-
-	logger.LogMeta(&Meta{
-		action: appendLog,
-		req:    req,
-		err:    ctx.Error,
-		time:   time.Now()})
-}
-
-func (logger *HttpLogger) LogResp(resp *http.Response, ctx *goproxy.ProxyCtx) {
-	if resp == nil {
-		resp = emptyResp
-	}
-
-	logger.LogMeta(&Meta{
-		action: appendLog,
-		resp:   resp,
-		err:    ctx.Error,
-		time:   time.Now()})
-}
-
-func (logger *HttpLogger) LogMeta(m *Meta) {
-	logger.logChannel <- m
-}
-
-func (logger *HttpLogger) Close() error {
-	close(logger.logChannel)
-	return <-logger.errorChanel
-}
-
-func (logger *HttpLogger) Reopen() {
-	logger.LogMeta(&Meta{action: reopenLog})
 }
 
 func setAllowedNetworksHandler(conf *Configuration, proxy *goproxy.ProxyHttpServer) {
@@ -435,13 +284,13 @@ func setSignalHandler(conf *Configuration, proxy *goproxy.ProxyHttpServer, logge
 			switch sig {
 			case os.Interrupt:
 				proxy.Logger.Println("got interrupt signal, exiting")
-				logger.Close()
+				logger.close()
 				os.Exit(0)
 			case syscall.SIGUSR1:
 				proxy.Logger.Println("got USR1 signal, reopening logs")
-				// Reopen access log
-				logger.Reopen()
-				// Reopen activity log
+				// reopen access log
+				logger.reopen()
+				// reopen activity log
 				setActivityLog(conf, proxy)
 			}
 		}
@@ -473,7 +322,7 @@ func setLoggingHandler(proxy *goproxy.ProxyHttpServer, logger *HttpLogger) {
 				ctx.Req = emptyReq
 			}
 
-			logger.LogMeta(&Meta{
+			logger.logMeta(&Meta{
 				action: appendLog,
 				req:    ctx.Req,
 				err:    ctx.Error,
@@ -484,7 +333,7 @@ func setLoggingHandler(proxy *goproxy.ProxyHttpServer, logger *HttpLogger) {
 
 	proxy.OnResponse().DoFunc(
 		func(resp *http.Response, ctx *goproxy.ProxyCtx) *http.Response {
-			logger.LogResp(resp, ctx)
+			logger.logResponse(resp, ctx)
 			return resp
 		})
 }
