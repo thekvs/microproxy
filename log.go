@@ -25,6 +25,7 @@ type Meta struct {
 	action int
 	req    *http.Request
 	resp   *http.Response
+	user   string
 	err    error
 	time   time.Time
 }
@@ -53,36 +54,48 @@ func write(nr *int64, err *error, w io.Writer, b []byte) {
 	*nr += int64(n)
 }
 
+func getAuthenticatedUserName(ctx *goproxy.ProxyCtx) string {
+	user, ok := ctx.UserData.(string)
+	if !ok {
+		user = "-"
+	}
+
+	return user
+}
+
 func (m *Meta) writeTo(w io.Writer) (nr int64, err error) {
 	if m.resp != nil {
 		if m.resp.Request != nil {
 			fprintf(&nr, &err, w,
-				"%v %v %v %v %v %v\n",
+				"%v %v %v %v %v %v %v\n",
 				m.time.Format(time.RFC3339),
 				m.resp.Request.RemoteAddr,
 				m.resp.Request.Method,
 				m.resp.Request.URL,
 				m.resp.StatusCode,
-				m.resp.ContentLength)
+				m.resp.ContentLength,
+				m.user)
 		} else {
 			fprintf(&nr, &err, w,
-				"%v %v %v %v %v %v\n",
+				"%v %v %v %v %v %v %v\n",
 				m.time.Format(time.RFC3339),
 				"-",
 				"-",
 				"-",
 				m.resp.StatusCode,
-				m.resp.ContentLength)
+				m.resp.ContentLength,
+				m.user)
 		}
 	} else if m.req != nil {
 		fprintf(&nr, &err, w,
-			"%v %v %v %v %v %v\n",
+			"%v %v %v %v %v %v %v\n",
 			m.time.Format(time.RFC3339),
 			m.req.RemoteAddr,
 			m.req.Method,
 			m.req.URL,
 			"-",
-			"-")
+			"-",
+			m.user)
 	}
 
 	return
@@ -145,12 +158,25 @@ func (logger *HttpLogger) logResponse(resp *http.Response, ctx *goproxy.ProxyCtx
 	logger.logMeta(&Meta{
 		action: appendLog,
 		resp:   resp,
+		user:   getAuthenticatedUserName(ctx),
 		err:    ctx.Error,
 		time:   time.Now()})
 }
 
 func (logger *HttpLogger) logMeta(m *Meta) {
 	logger.logChannel <- m
+}
+
+func (logger *HttpLogger) log(ctx *goproxy.ProxyCtx) {
+	meta := &Meta{
+		action: appendLog,
+		req:    ctx.Req,
+		resp:   ctx.Resp,
+		user:   getAuthenticatedUserName(ctx),
+		err:    ctx.Error,
+		time:   time.Now(),
+	}
+	logger.logMeta(meta)
 }
 
 func (logger *HttpLogger) close() error {

@@ -73,7 +73,7 @@ func TestBasicConnectAuthWithCurl(t *testing.T) {
 	if err != nil {
 		t.Fatalf("couldn't create digest auth structure: %v", err)
 	}
-	setProxyBasicAuth(proxy, realm, makeBasicAuthValidator(auth))
+	setProxyBasicAuth(proxy, realm, makeBasicAuthValidator(auth), nil)
 
 	authString := user + ":" + password
 	cmd := exec.Command("curl",
@@ -112,7 +112,7 @@ func TestBasicAuthWithCurl(t *testing.T) {
 	if err != nil {
 		t.Fatalf("couldn't create digest auth structure: %v", err)
 	}
-	setProxyBasicAuth(proxy, realm, makeBasicAuthValidator(auth))
+	setProxyBasicAuth(proxy, realm, makeBasicAuthValidator(auth), nil)
 
 	authString := user + ":" + password
 	cmd := exec.Command("curl",
@@ -149,7 +149,7 @@ func TestBasicAuth(t *testing.T) {
 	if err != nil {
 		t.Fatalf("couldn't create digest auth structure: %v", err)
 	}
-	setProxyBasicAuth(proxy, realm, makeBasicAuthValidator(auth))
+	setProxyBasicAuth(proxy, realm, makeBasicAuthValidator(auth), nil)
 
 	// without auth
 	resp, err := client.Get(background.URL)
@@ -203,7 +203,7 @@ func TestDigestAuth(t *testing.T) {
 	if err != nil {
 		t.Fatalf("couldn't create digest auth structure: %v", err)
 	}
-	setProxyDigestAuth(proxy, realm, makeDigestAuthValidator(auth))
+	setProxyDigestAuth(proxy, realm, makeDigestAuthValidator(auth), nil)
 
 	// without auth
 	resp, err := client.Get(background.URL)
@@ -274,7 +274,7 @@ func TestDigestAuthWithPython(t *testing.T) {
 	if err != nil {
 		t.Fatalf("couldn't create digest auth structure: %v", err)
 	}
-	setProxyDigestAuth(proxy, realm, makeDigestAuthValidator(auth))
+	setProxyDigestAuth(proxy, realm, makeDigestAuthValidator(auth), nil)
 
 	cmd := exec.Command("python",
 		"proxy-digest-auth-test.py",
@@ -311,7 +311,7 @@ func TestDigestAuthWithCurl(t *testing.T) {
 	if err != nil {
 		t.Fatalf("couldn't create digest auth structure: %v", err)
 	}
-	setProxyDigestAuth(proxy, realm, makeDigestAuthValidator(auth))
+	setProxyDigestAuth(proxy, realm, makeDigestAuthValidator(auth), nil)
 
 	authString := user + ":" + password
 	cmd := exec.Command("curl",

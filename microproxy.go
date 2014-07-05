@@ -297,40 +297,44 @@ func setSignalHandler(conf *Configuration, proxy *goproxy.ProxyHttpServer, logge
 	}()
 }
 
-func setAuthenticationHandler(conf *Configuration, proxy *goproxy.ProxyHttpServer) {
+func setAuthenticationHandler(conf *Configuration, proxy *goproxy.ProxyHttpServer, logger *HttpLogger) {
 	if conf.AuthFile != "" {
 		if conf.AuthType == "basic" {
 			auth, err := NewBasicAuthFromFile(conf.AuthFile)
 			if err != nil {
 				proxy.Logger.Fatalf("couldn't create basic auth structure: %v\n", err)
 			}
-			setProxyBasicAuth(proxy, conf.AuthRealm, makeBasicAuthValidator(auth))
+			setProxyBasicAuth(proxy, conf.AuthRealm, makeBasicAuthValidator(auth), logger)
 		} else {
 			auth, err := NewDigestAuthFromFile(conf.AuthFile)
 			if err != nil {
 				proxy.Logger.Fatalf("couldn't create digest auth structure: %v\n", err)
 			}
-			setProxyDigestAuth(proxy, conf.AuthRealm, makeDigestAuthValidator(auth))
+			setProxyDigestAuth(proxy, conf.AuthRealm, makeDigestAuthValidator(auth), logger)
 		}
+	} else {
+		// If there is neither Digest no Basic authentication we still need to setup
+		// handler to log HTTPS CONNECT requests
+		setHTTPSLoggingHandler(proxy, logger)
 	}
 }
 
-func setLoggingHandler(proxy *goproxy.ProxyHttpServer, logger *HttpLogger) {
+func setHTTPSLoggingHandler(proxy *goproxy.ProxyHttpServer, logger *HttpLogger) {
 	proxy.OnRequest().HandleConnectFunc(
 		func(host string, ctx *goproxy.ProxyCtx) (*goproxy.ConnectAction, string) {
 			if ctx.Req == nil {
 				ctx.Req = emptyReq
 			}
 
-			logger.logMeta(&Meta{
-				action: appendLog,
-				req:    ctx.Req,
-				err:    ctx.Error,
-				time:   time.Now()})
+			if logger != nil {
+				logger.log(ctx)
+			}
 
 			return goproxy.OkConnect, host
 		})
+}
 
+func setHTTPLoggingHandler(proxy *goproxy.ProxyHttpServer, logger *HttpLogger) {
 	proxy.OnResponse().DoFunc(
 		func(resp *http.Response, ctx *goproxy.ProxyCtx) *http.Response {
 			logger.logResponse(resp, ctx)
@@ -351,7 +355,7 @@ func main() {
 
 	logger := NewLogger(conf)
 
-	setLoggingHandler(proxy, logger)
+	setHTTPLoggingHandler(proxy, logger)
 	setAllowedConnectPortsHandler(conf, proxy)
 	setAllowedNetworksHandler(conf, proxy)
 	setForwardedForHeaderHandler(conf, proxy)
@@ -359,7 +363,7 @@ func main() {
 
 	// To be called first while processing handlers' stack,
 	// has to be placed last in the source code.
-	setAuthenticationHandler(conf, proxy)
+	setAuthenticationHandler(conf, proxy, logger)
 
 	proxy.Logger.Println("starting proxy")
 
