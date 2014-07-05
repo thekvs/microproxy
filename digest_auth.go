@@ -87,7 +87,7 @@ func NewDigestAuth(file io.Reader) (*DigestAuth, error) {
 	return h, nil
 }
 
-func (h *DigestAuth) Validate(data *DigestAuthData) bool {
+func (h *DigestAuth) validate(data *DigestAuthData) bool {
 	lookupKey := data.user + ":" + data.realm
 	ha1, exists := h.users[lookupKey]
 	if !exists {
@@ -123,7 +123,7 @@ func (h *DigestAuth) Validate(data *DigestAuthData) bool {
 	return false
 }
 
-func (h *DigestAuth) NewNonce() string {
+func (h *DigestAuth) newNonce() string {
 	var nonce string
 
 	for {

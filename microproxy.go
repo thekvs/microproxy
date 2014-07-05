@@ -57,7 +57,7 @@ func makeBasicAuthValidator(auth *BasicAuth) BasicAuthFunc {
 	channel := make(chan *BasicAuthRequest)
 	validator := func() {
 		for e := range channel {
-			status := auth.Validate(e.data)
+			status := auth.validate(e.data)
 			e.respChannel <- &BasicAuthResponse{status}
 		}
 	}
@@ -79,14 +79,14 @@ func makeDigestAuthValidator(auth *DigestAuth) DigestAuthFunc {
 			var response *DigestAuthResponse
 			switch e.op {
 			case validateUser:
-				status := auth.Validate(e.data)
+				status := auth.validate(e.data)
 				if status {
 					response = &DigestAuthResponse{status: authOk}
 				} else {
 					response = &DigestAuthResponse{status: authFailed}
 				}
 			case getNonce:
-				nonce := auth.NewNonce()
+				nonce := auth.newNonce()
 				response = &DigestAuthResponse{status: nonceOk, data: nonce}
 			case maintPing:
 				auth.expireNonces()

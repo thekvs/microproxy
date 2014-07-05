@@ -52,7 +52,7 @@ func NewBasicAuth(file io.Reader) (*BasicAuth, error) {
 	return h, nil
 }
 
-func (h *BasicAuth) Validate(authData *BasicAuthData) bool {
+func (h *BasicAuth) validate(authData *BasicAuthData) bool {
 	realPassword, exists := h.Users[authData.user]
 	if !exists || realPassword != authData.password {
 		return false
