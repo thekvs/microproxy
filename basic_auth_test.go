@@ -7,12 +7,12 @@ import (
 
 func TestBasicAuthFile(t *testing.T) {
 	file := bytes.NewBuffer([]byte("testuser:asdf\n"))
-	basic_auth, err := NewBasicAuth(file)
+	auth, err := newBasicAuth(file)
 	if err != nil {
 		t.Errorf("couldn't create basic auth structure")
 	}
 
-	if valid := basic_auth.validate(&BasicAuthData{"testuser", "asdf"}); valid != true {
+	if valid := auth.validate(&basicAuthData{"testuser", "asdf"}); valid != true {
 		t.Errorf("password validation failed")
 	}
 }

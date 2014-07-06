@@ -12,8 +12,8 @@ import (
 	"github.com/elazarl/goproxy"
 )
 
-type BasicAuthFunc func(authData *BasicAuthData) *BasicAuthResponse
-type DigestAuthFunc func(authData *DigestAuthData, op int) *DigestAuthResponse
+type basicAuthFunc func(authData *basicAuthData) *basicAuthResponse
+type digestAuthFunc func(authData *digestAuthData, op int) *digestAuthResponse
 
 var unauthorizedMsg = []byte("407 Proxy Authentication Required")
 
@@ -36,7 +36,7 @@ func basicUnauthorized(req *http.Request, realm string) *http.Response {
 	}
 }
 
-func digestUnauthorized(req *http.Request, realm string, authFunc DigestAuthFunc) *http.Response {
+func digestUnauthorized(req *http.Request, realm string, authFunc digestAuthFunc) *http.Response {
 	authResult := authFunc(nil, getNonce)
 	nonce := authResult.data
 	header := fmt.Sprintf("Digest realm=\"%s\", qop=auth, nonce=\"%s\"", realm, nonce)
@@ -52,7 +52,7 @@ func digestUnauthorized(req *http.Request, realm string, authFunc DigestAuthFunc
 	}
 }
 
-func getDigestAuthData(req *http.Request) *DigestAuthData {
+func getDigestAuthData(req *http.Request) *digestAuthData {
 	authHeader := strings.SplitN(req.Header.Get(proxyAuthorizatonHeader), " ", 2)
 	req.Header.Del(proxyAuthorizatonHeader)
 
@@ -102,7 +102,7 @@ func getDigestAuthData(req *http.Request) *DigestAuthData {
 		m[kv[0]] = strings.Trim(kv[1], "\"")
 	}
 
-	var data DigestAuthData
+	var data digestAuthData
 
 	if v, ok := m["username"]; ok {
 		data.user = v
@@ -141,7 +141,7 @@ func getDigestAuthData(req *http.Request) *DigestAuthData {
 	return &data
 }
 
-func getBasicAuthData(req *http.Request) *BasicAuthData {
+func getBasicAuthData(req *http.Request) *basicAuthData {
 	authHeader := strings.SplitN(req.Header.Get(proxyAuthorizatonHeader), " ", 2)
 	req.Header.Del(proxyAuthorizatonHeader)
 
@@ -159,12 +159,12 @@ func getBasicAuthData(req *http.Request) *BasicAuthData {
 		return nil
 	}
 
-	data := BasicAuthData{user: userPassword[0], password: userPassword[1]}
+	data := basicAuthData{user: userPassword[0], password: userPassword[1]}
 
 	return &data
 }
 
-func basicAuth(req *http.Request, authFunc BasicAuthFunc) (bool, *BasicAuthData) {
+func performBasicAuth(req *http.Request, authFunc basicAuthFunc) (bool, *basicAuthData) {
 	data := getBasicAuthData(req)
 	if data == nil {
 		return false, data
@@ -175,7 +175,7 @@ func basicAuth(req *http.Request, authFunc BasicAuthFunc) (bool, *BasicAuthData)
 	return resp.status, data
 }
 
-func digestAuth(req *http.Request, authFunc DigestAuthFunc) (bool, *DigestAuthData) {
+func performDigestAuth(req *http.Request, authFunc digestAuthFunc) (bool, *digestAuthData) {
 	data := getDigestAuthData(req)
 	if data == nil {
 		return false, data
@@ -195,9 +195,9 @@ func digestAuth(req *http.Request, authFunc DigestAuthFunc) (bool, *DigestAuthDa
 	//return false, data
 }
 
-func basicAuthReqHandler(realm string, authFunc BasicAuthFunc) goproxy.ReqHandler {
+func basicAuthReqHandler(realm string, authFunc basicAuthFunc) goproxy.ReqHandler {
 	return goproxy.FuncReqHandler(func(req *http.Request, ctx *goproxy.ProxyCtx) (*http.Request, *http.Response) {
-		status, data := basicAuth(req, authFunc)
+		status, data := performBasicAuth(req, authFunc)
 		if !status {
 			if data != nil {
 				ctx.Warnf("failed basic auth. attempt: user=%v, addr=%v", data.user, req.RemoteAddr)
@@ -211,9 +211,9 @@ func basicAuthReqHandler(realm string, authFunc BasicAuthFunc) goproxy.ReqHandle
 	})
 }
 
-func digestAuthReqHandler(realm string, authFunc DigestAuthFunc) goproxy.ReqHandler {
+func digestAuthReqHandler(realm string, authFunc digestAuthFunc) goproxy.ReqHandler {
 	return goproxy.FuncReqHandler(func(req *http.Request, ctx *goproxy.ProxyCtx) (*http.Request, *http.Response) {
-		status, data := digestAuth(req, authFunc)
+		status, data := performDigestAuth(req, authFunc)
 		if !status {
 			if data != nil {
 				ctx.Warnf("failed digest auth. attempt: user=%v, realm=%v, addr=%v", data.user, data.realm, req.RemoteAddr)
@@ -227,9 +227,9 @@ func digestAuthReqHandler(realm string, authFunc DigestAuthFunc) goproxy.ReqHand
 	})
 }
 
-func basicConnectAuthHandler(realm string, authFunc BasicAuthFunc, logger *HttpLogger) goproxy.HttpsHandler {
+func basicConnectAuthHandler(realm string, authFunc basicAuthFunc, logger *proxyLogger) goproxy.HttpsHandler {
 	return goproxy.FuncHttpsHandler(func(host string, ctx *goproxy.ProxyCtx) (*goproxy.ConnectAction, string) {
-		status, data := basicAuth(ctx.Req, authFunc)
+		status, data := performBasicAuth(ctx.Req, authFunc)
 		if !status {
 			if data != nil {
 				ctx.Warnf("failed basic auth. CONNECT method attempt: user=%v, addr=%v", data.user, ctx.Req.RemoteAddr)
@@ -251,9 +251,9 @@ func basicConnectAuthHandler(realm string, authFunc BasicAuthFunc, logger *HttpL
 	})
 }
 
-func digestConnectAuthHandler(realm string, authFunc DigestAuthFunc, logger *HttpLogger) goproxy.HttpsHandler {
+func digestConnectAuthHandler(realm string, authFunc digestAuthFunc, logger *proxyLogger) goproxy.HttpsHandler {
 	return goproxy.FuncHttpsHandler(func(host string, ctx *goproxy.ProxyCtx) (*goproxy.ConnectAction, string) {
-		status, data := digestAuth(ctx.Req, authFunc)
+		status, data := performDigestAuth(ctx.Req, authFunc)
 		if !status {
 			if data != nil {
 				ctx.Warnf("failed digest auth. CONNECT method attempt: user=%v, realm=%v, addr=%v",
@@ -276,12 +276,12 @@ func digestConnectAuthHandler(realm string, authFunc DigestAuthFunc, logger *Htt
 	})
 }
 
-func setProxyBasicAuth(proxy *goproxy.ProxyHttpServer, realm string, authFunc BasicAuthFunc, logger *HttpLogger) {
+func setProxyBasicAuth(proxy *goproxy.ProxyHttpServer, realm string, authFunc basicAuthFunc, logger *proxyLogger) {
 	proxy.OnRequest().Do(basicAuthReqHandler(realm, authFunc))
 	proxy.OnRequest().HandleConnect(basicConnectAuthHandler(realm, authFunc, logger))
 }
 
-func setProxyDigestAuth(proxy *goproxy.ProxyHttpServer, realm string, authFunc DigestAuthFunc, logger *HttpLogger) {
+func setProxyDigestAuth(proxy *goproxy.ProxyHttpServer, realm string, authFunc digestAuthFunc, logger *proxyLogger) {
 	proxy.OnRequest().Do(digestAuthReqHandler(realm, authFunc))
 	proxy.OnRequest().HandleConnect(digestConnectAuthHandler(realm, authFunc, logger))
 }

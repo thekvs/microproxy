@@ -17,7 +17,7 @@ func compareSlices(s1 []string, s2 []string) bool {
 }
 
 func TestConfigFile(t *testing.T) {
-	expected := Configuration{
+	expected := configuration{
 		Listen:              "127.0.0.1:3129",
 		AccessLog:           "/tmp/microproxy.access.log",
 		AuthType:            "basic",
@@ -29,7 +29,7 @@ func TestConfigFile(t *testing.T) {
 	expected.AllowedConnectPorts[0] = "443"
 	expected.AllowedConnectPorts[1] = "80"
 
-	conf := NewConfiguration("microproxy.json")
+	conf := newConfiguration("microproxy.json")
 
 	if conf.Listen != expected.Listen {
 		t.Errorf("Got %v, expected %v", conf.Listen, expected.Listen)

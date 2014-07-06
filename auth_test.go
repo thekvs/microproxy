@@ -44,8 +44,8 @@ func oneShotProxy() (client *http.Client, proxy *goproxy.ProxyHttpServer, s *htt
 	proxy = goproxy.NewProxyHttpServer()
 	s = httptest.NewServer(proxy)
 
-	proxyUrl, _ := url.Parse(s.URL)
-	tr := &http.Transport{Proxy: http.ProxyURL(proxyUrl)}
+	proxyURL, _ := url.Parse(s.URL)
+	tr := &http.Transport{Proxy: http.ProxyURL(proxyURL)}
 	client = &http.Client{Transport: tr}
 	return
 }
@@ -69,7 +69,7 @@ func TestBasicConnectAuthWithCurl(t *testing.T) {
 
 	s := user + ":" + password + "\n"
 	file := bytes.NewBuffer([]byte(s))
-	auth, err := NewBasicAuth(file)
+	auth, err := newBasicAuth(file)
 	if err != nil {
 		t.Fatalf("couldn't create digest auth structure: %v", err)
 	}
@@ -108,7 +108,7 @@ func TestBasicAuthWithCurl(t *testing.T) {
 
 	s := user + ":" + password + "\n"
 	file := bytes.NewBuffer([]byte(s))
-	auth, err := NewBasicAuth(file)
+	auth, err := newBasicAuth(file)
 	if err != nil {
 		t.Fatalf("couldn't create digest auth structure: %v", err)
 	}
@@ -145,7 +145,7 @@ func TestBasicAuth(t *testing.T) {
 
 	s := user + ":" + password + "\n"
 	file := bytes.NewBuffer([]byte(s))
-	auth, err := NewBasicAuth(file)
+	auth, err := newBasicAuth(file)
 	if err != nil {
 		t.Fatalf("couldn't create digest auth structure: %v", err)
 	}
@@ -199,7 +199,7 @@ func TestDigestAuth(t *testing.T) {
 
 	s := user + ":" + realm + ":" + ha1 + "\n"
 	file := bytes.NewBuffer([]byte(s))
-	auth, err := NewDigestAuth(file)
+	auth, err := newDigestAuth(file)
 	if err != nil {
 		t.Fatalf("couldn't create digest auth structure: %v", err)
 	}
@@ -270,7 +270,7 @@ func TestDigestAuthWithPython(t *testing.T) {
 
 	s := user + ":" + realm + ":" + ha1 + "\n"
 	file := bytes.NewBuffer([]byte(s))
-	auth, err := NewDigestAuth(file)
+	auth, err := newDigestAuth(file)
 	if err != nil {
 		t.Fatalf("couldn't create digest auth structure: %v", err)
 	}
@@ -307,7 +307,7 @@ func TestDigestAuthWithCurl(t *testing.T) {
 
 	s := user + ":" + realm + ":" + ha1 + "\n"
 	file := bytes.NewBuffer([]byte(s))
-	auth, err := NewDigestAuth(file)
+	auth, err := newDigestAuth(file)
 	if err != nil {
 		t.Fatalf("couldn't create digest auth structure: %v", err)
 	}

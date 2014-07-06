@@ -7,36 +7,36 @@ import (
 	"os"
 )
 
-type BasicAuthData struct {
+type basicAuthData struct {
 	user     string
 	password string
 }
 
-type BasicAuth struct {
+type basicAuth struct {
 	Users map[string]string
 }
 
-func NewBasicAuthFromFile(path string) (*BasicAuth, error) {
+func newBasicAuthFromFile(path string) (*basicAuth, error) {
 	r, err := os.Open(path)
 	if err != nil {
 		return nil, err
 	}
 
-	return NewBasicAuth(r)
+	return newBasicAuth(r)
 }
 
-func NewBasicAuth(file io.Reader) (*BasicAuth, error) {
-	csv_reader := csv.NewReader(file)
-	csv_reader.Comma = ':'
-	csv_reader.Comment = '#'
-	csv_reader.TrimLeadingSpace = true
+func newBasicAuth(file io.Reader) (*basicAuth, error) {
+	csvReader := csv.NewReader(file)
+	csvReader.Comma = ':'
+	csvReader.Comment = '#'
+	csvReader.TrimLeadingSpace = true
 
-	records, err := csv_reader.ReadAll()
+	records, err := csvReader.ReadAll()
 	if err != nil {
 		return nil, err
 	}
 
-	h := &BasicAuth{Users: make(map[string]string)}
+	h := &basicAuth{Users: make(map[string]string)}
 
 	for _, record := range records {
 		if len(record) != 2 {
@@ -52,7 +52,7 @@ func NewBasicAuth(file io.Reader) (*BasicAuth, error) {
 	return h, nil
 }
 
-func (h *BasicAuth) validate(authData *BasicAuthData) bool {
+func (h *basicAuth) validate(authData *basicAuthData) bool {
 	realPassword, exists := h.Users[authData.user]
 	if !exists || realPassword != authData.password {
 		return false

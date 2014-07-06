@@ -33,64 +33,64 @@ const (
 const proxyForwardedForHeader = "X-Forwarded-For"
 const tcpKeepAliveInterval = 1 * time.Minute
 
-type BasicAuthRequest struct {
-	data        *BasicAuthData
-	respChannel chan *BasicAuthResponse
+type basicAuthRequest struct {
+	data        *basicAuthData
+	respChannel chan *basicAuthResponse
 }
 
-type BasicAuthResponse struct {
+type basicAuthResponse struct {
 	status bool
 }
 
-type DigestAuthRequest struct {
-	data        *DigestAuthData
+type digestAuthRequest struct {
+	data        *digestAuthData
 	op          int
-	respChannel chan *DigestAuthResponse
+	respChannel chan *digestAuthResponse
 }
 
-type DigestAuthResponse struct {
+type digestAuthResponse struct {
 	data   string
 	status int
 }
 
-func makeBasicAuthValidator(auth *BasicAuth) BasicAuthFunc {
-	channel := make(chan *BasicAuthRequest)
+func makeBasicAuthValidator(auth *basicAuth) basicAuthFunc {
+	channel := make(chan *basicAuthRequest)
 	validator := func() {
 		for e := range channel {
 			status := auth.validate(e.data)
-			e.respChannel <- &BasicAuthResponse{status}
+			e.respChannel <- &basicAuthResponse{status}
 		}
 	}
 
 	go validator()
 
-	return func(authData *BasicAuthData) *BasicAuthResponse {
-		request := &BasicAuthRequest{authData, make(chan *BasicAuthResponse)}
+	return func(authData *basicAuthData) *basicAuthResponse {
+		request := &basicAuthRequest{authData, make(chan *basicAuthResponse)}
 		channel <- request
 		return <-request.respChannel
 	}
 }
 
-func makeDigestAuthValidator(auth *DigestAuth) DigestAuthFunc {
-	channel := make(chan *DigestAuthRequest)
+func makeDigestAuthValidator(auth *digestAuth) digestAuthFunc {
+	channel := make(chan *digestAuthRequest)
 
 	processor := func() {
 		for e := range channel {
-			var response *DigestAuthResponse
+			var response *digestAuthResponse
 			switch e.op {
 			case validateUser:
 				status := auth.validate(e.data)
 				if status {
-					response = &DigestAuthResponse{status: authOk}
+					response = &digestAuthResponse{status: authOk}
 				} else {
-					response = &DigestAuthResponse{status: authFailed}
+					response = &digestAuthResponse{status: authFailed}
 				}
 			case getNonce:
 				nonce := auth.newNonce()
-				response = &DigestAuthResponse{status: nonceOk, data: nonce}
+				response = &digestAuthResponse{status: nonceOk, data: nonce}
 			case maintPing:
 				auth.expireNonces()
-				response = &DigestAuthResponse{status: maintOk}
+				response = &digestAuthResponse{status: maintOk}
 			default:
 				panic("unexpected operation type")
 			}
@@ -100,7 +100,7 @@ func makeDigestAuthValidator(auth *DigestAuth) DigestAuthFunc {
 
 	maintPinger := func() {
 		for {
-			request := &DigestAuthRequest{op: maintPing, respChannel: make(chan *DigestAuthResponse)}
+			request := &digestAuthRequest{op: maintPing, respChannel: make(chan *digestAuthResponse)}
 			channel <- request
 			response := <-request.respChannel
 			if response.status != maintOk {
@@ -113,8 +113,8 @@ func makeDigestAuthValidator(auth *DigestAuth) DigestAuthFunc {
 	go processor()
 	go maintPinger()
 
-	authFunc := func(authData *DigestAuthData, op int) *DigestAuthResponse {
-		request := &DigestAuthRequest{data: authData, op: op, respChannel: make(chan *DigestAuthResponse)}
+	authFunc := func(authData *digestAuthData, op int) *digestAuthResponse {
+		request := &digestAuthRequest{data: authData, op: op, respChannel: make(chan *digestAuthResponse)}
 		channel <- request
 		return <-request.respChannel
 	}
@@ -122,25 +122,25 @@ func makeDigestAuthValidator(auth *DigestAuth) DigestAuthFunc {
 	return authFunc
 }
 
-func setAllowedNetworksHandler(conf *Configuration, proxy *goproxy.ProxyHttpServer) {
+func setAllowedNetworksHandler(conf *configuration, proxy *goproxy.ProxyHttpServer) {
 	if conf.AllowedNetworks != nil && len(conf.AllowedNetworks) > 0 {
-		proxy.OnRequest(goproxy.Not(sourceIpMatches(conf.AllowedNetworks))).HandleConnect(goproxy.AlwaysReject)
-		proxy.OnRequest(goproxy.Not(sourceIpMatches(conf.AllowedNetworks))).DoFunc(
+		proxy.OnRequest(goproxy.Not(sourceIPMatches(conf.AllowedNetworks))).HandleConnect(goproxy.AlwaysReject)
+		proxy.OnRequest(goproxy.Not(sourceIPMatches(conf.AllowedNetworks))).DoFunc(
 			func(req *http.Request, ctx *goproxy.ProxyCtx) (*http.Request, *http.Response) {
 				return req, goproxy.NewResponse(req, goproxy.ContentTypeHtml, http.StatusForbidden, "Access denied")
 			})
 	}
 
 	if conf.DisallowedNetworks != nil && len(conf.DisallowedNetworks) > 0 {
-		proxy.OnRequest(sourceIpMatches(conf.DisallowedNetworks)).HandleConnect(goproxy.AlwaysReject)
-		proxy.OnRequest(sourceIpMatches(conf.DisallowedNetworks)).DoFunc(
+		proxy.OnRequest(sourceIPMatches(conf.DisallowedNetworks)).HandleConnect(goproxy.AlwaysReject)
+		proxy.OnRequest(sourceIPMatches(conf.DisallowedNetworks)).DoFunc(
 			func(req *http.Request, ctx *goproxy.ProxyCtx) (*http.Request, *http.Response) {
 				return req, goproxy.NewResponse(req, goproxy.ContentTypeHtml, http.StatusForbidden, "Access denied")
 			})
 	}
 }
 
-func sourceIpMatches(networks []string) goproxy.ReqConditionFunc {
+func sourceIPMatches(networks []string) goproxy.ReqConditionFunc {
 	cidrs := make([](*net.IPNet), len(networks))
 	for idx, network := range networks {
 		_, cidrnet, _ := net.ParseCIDR(network)
@@ -163,7 +163,7 @@ func sourceIpMatches(networks []string) goproxy.ReqConditionFunc {
 	}
 }
 
-func setAllowedConnectPortsHandler(conf *Configuration, proxy *goproxy.ProxyHttpServer) {
+func setAllowedConnectPortsHandler(conf *configuration, proxy *goproxy.ProxyHttpServer) {
 	if conf.AllowedConnectPorts != nil && len(conf.AllowedConnectPorts) > 0 {
 		ports := make([]string, len(conf.AllowedConnectPorts))
 		for i, v := range conf.AllowedConnectPorts {
@@ -174,7 +174,7 @@ func setAllowedConnectPortsHandler(conf *Configuration, proxy *goproxy.ProxyHttp
 	}
 }
 
-func setForwardedForHeaderHandler(conf *Configuration, proxy *goproxy.ProxyHttpServer) {
+func setForwardedForHeaderHandler(conf *configuration, proxy *goproxy.ProxyHttpServer) {
 	f := func(req *http.Request, ctx *goproxy.ProxyCtx) (*http.Request, *http.Response) {
 		ip, _, err := net.SplitHostPort(req.RemoteAddr)
 		if err != nil {
@@ -218,7 +218,7 @@ func makeCustomDial(localAddr *net.TCPAddr) func(string, string) (net.Conn, erro
 			conn.SetKeepAlivePeriod(tcpKeepAliveInterval)
 		}
 
-		c := TConn{
+		c := timedConn{
 			Conn:         conn,
 			readTimeout:  defaultReadTimeout,
 			writeTimeout: defaultWriteTimeout,
@@ -228,7 +228,7 @@ func makeCustomDial(localAddr *net.TCPAddr) func(string, string) (net.Conn, erro
 	}
 }
 
-func createProxy(conf *Configuration) *goproxy.ProxyHttpServer {
+func createProxy(conf *configuration) *goproxy.ProxyHttpServer {
 	proxy := goproxy.NewProxyHttpServer()
 	setActivityLog(conf, proxy)
 
@@ -264,7 +264,7 @@ func createProxy(conf *Configuration) *goproxy.ProxyHttpServer {
 	return proxy
 }
 
-func setActivityLog(conf *Configuration, proxy *goproxy.ProxyHttpServer) {
+func setActivityLog(conf *configuration, proxy *goproxy.ProxyHttpServer) {
 	if conf.ActivityLog != "" {
 		fh, err := os.OpenFile(conf.ActivityLog, os.O_APPEND|os.O_WRONLY|os.O_CREATE, 0600)
 		if err != nil {
@@ -274,7 +274,7 @@ func setActivityLog(conf *Configuration, proxy *goproxy.ProxyHttpServer) {
 	}
 }
 
-func setSignalHandler(conf *Configuration, proxy *goproxy.ProxyHttpServer, logger *HttpLogger) {
+func setSignalHandler(conf *configuration, proxy *goproxy.ProxyHttpServer, logger *proxyLogger) {
 	signalChannel := make(chan os.Signal)
 	signal.Notify(signalChannel, os.Interrupt, syscall.SIGUSR1)
 
@@ -297,16 +297,16 @@ func setSignalHandler(conf *Configuration, proxy *goproxy.ProxyHttpServer, logge
 	}()
 }
 
-func setAuthenticationHandler(conf *Configuration, proxy *goproxy.ProxyHttpServer, logger *HttpLogger) {
+func setAuthenticationHandler(conf *configuration, proxy *goproxy.ProxyHttpServer, logger *proxyLogger) {
 	if conf.AuthFile != "" {
 		if conf.AuthType == "basic" {
-			auth, err := NewBasicAuthFromFile(conf.AuthFile)
+			auth, err := newBasicAuthFromFile(conf.AuthFile)
 			if err != nil {
 				proxy.Logger.Fatalf("couldn't create basic auth structure: %v\n", err)
 			}
 			setProxyBasicAuth(proxy, conf.AuthRealm, makeBasicAuthValidator(auth), logger)
 		} else {
-			auth, err := NewDigestAuthFromFile(conf.AuthFile)
+			auth, err := newDigestAuthFromFile(conf.AuthFile)
 			if err != nil {
 				proxy.Logger.Fatalf("couldn't create digest auth structure: %v\n", err)
 			}
@@ -319,7 +319,7 @@ func setAuthenticationHandler(conf *Configuration, proxy *goproxy.ProxyHttpServe
 	}
 }
 
-func setHTTPSLoggingHandler(proxy *goproxy.ProxyHttpServer, logger *HttpLogger) {
+func setHTTPSLoggingHandler(proxy *goproxy.ProxyHttpServer, logger *proxyLogger) {
 	proxy.OnRequest().HandleConnectFunc(
 		func(host string, ctx *goproxy.ProxyCtx) (*goproxy.ConnectAction, string) {
 			if ctx.Req == nil {
@@ -334,7 +334,7 @@ func setHTTPSLoggingHandler(proxy *goproxy.ProxyHttpServer, logger *HttpLogger) 
 		})
 }
 
-func setHTTPLoggingHandler(proxy *goproxy.ProxyHttpServer, logger *HttpLogger) {
+func setHTTPLoggingHandler(proxy *goproxy.ProxyHttpServer, logger *proxyLogger) {
 	proxy.OnResponse().DoFunc(
 		func(resp *http.Response, ctx *goproxy.ProxyCtx) *http.Response {
 			logger.logResponse(resp, ctx)
@@ -348,12 +348,12 @@ func main() {
 
 	flag.Parse()
 
-	conf := NewConfiguration(*config)
+	conf := newConfiguration(*config)
 
 	proxy := createProxy(conf)
 	proxy.Verbose = *verbose
 
-	logger := NewLogger(conf)
+	logger := newProxyLogger(conf)
 
 	setHTTPLoggingHandler(proxy, logger)
 	setAllowedConnectPortsHandler(conf, proxy)

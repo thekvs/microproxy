@@ -10,13 +10,13 @@ const (
 	defaultWriteTimeout = 15 * time.Minute
 )
 
-type TConn struct {
+type timedConn struct {
 	net.Conn
 	readTimeout  time.Duration
 	writeTimeout time.Duration
 }
 
-func (c TConn) Read(b []byte) (int, error) {
+func (c timedConn) Read(b []byte) (int, error) {
 	err := c.Conn.SetReadDeadline(time.Now().Add(c.readTimeout))
 	if err != nil {
 		return 0, err
@@ -25,7 +25,7 @@ func (c TConn) Read(b []byte) (int, error) {
 	return c.Conn.Read(b)
 }
 
-func (c TConn) Write(b []byte) (int, error) {
+func (c timedConn) Write(b []byte) (int, error) {
 	err := c.Conn.SetWriteDeadline(time.Now().Add(c.writeTimeout))
 	if err != nil {
 		return 0, err

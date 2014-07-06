@@ -7,7 +7,7 @@ import (
 	"os"
 )
 
-type Configuration struct {
+type configuration struct {
 	Listen              string   `json:"listen"`
 	AccessLog           string   `json:"access_log"`
 	ActivityLog         string   `json:"activity_log"`
@@ -42,14 +42,14 @@ func validateNetworks(networks []string) {
 	}
 }
 
-func NewConfiguration(path string) *Configuration {
+func newConfiguration(path string) *configuration {
 	file, err := os.Open(path)
 	if err != nil {
 		log.Fatal("can't open configuration file: ", err)
 	}
 
 	decoder := json.NewDecoder(file)
-	conf := &Configuration{}
+	conf := &configuration{}
 	decoder.Decode(&conf)
 
 	if conf.Listen == "" {
