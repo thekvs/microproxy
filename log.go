@@ -143,7 +143,7 @@ func (logger *proxyLogger) logRequest(req *http.Request, ctx *goproxy.ProxyCtx) 
 		req = emptyReq
 	}
 
-	logger.logMeta(&logData{
+	logger.writeLogEntry(&logData{
 		action: appendLog,
 		req:    req,
 		err:    ctx.Error,
@@ -155,7 +155,7 @@ func (logger *proxyLogger) logResponse(resp *http.Response, ctx *goproxy.ProxyCt
 		resp = emptyResp
 	}
 
-	logger.logMeta(&logData{
+	logger.writeLogEntry(&logData{
 		action: appendLog,
 		resp:   resp,
 		user:   getAuthenticatedUserName(ctx),
@@ -163,12 +163,12 @@ func (logger *proxyLogger) logResponse(resp *http.Response, ctx *goproxy.ProxyCt
 		time:   time.Now()})
 }
 
-func (logger *proxyLogger) logMeta(m *logData) {
-	logger.logChannel <- m
+func (logger *proxyLogger) writeLogEntry(data *logData) {
+	logger.logChannel <- data
 }
 
 func (logger *proxyLogger) log(ctx *goproxy.ProxyCtx) {
-	meta := &logData{
+	data := &logData{
 		action: appendLog,
 		req:    ctx.Req,
 		resp:   ctx.Resp,
@@ -176,7 +176,7 @@ func (logger *proxyLogger) log(ctx *goproxy.ProxyCtx) {
 		err:    ctx.Error,
 		time:   time.Now(),
 	}
-	logger.logMeta(meta)
+	logger.writeLogEntry(data)
 }
 
 func (logger *proxyLogger) close() error {
@@ -185,5 +185,5 @@ func (logger *proxyLogger) close() error {
 }
 
 func (logger *proxyLogger) reopen() {
-	logger.logMeta(&logData{action: reopenLog})
+	logger.writeLogEntry(&logData{action: reopenLog})
 }
