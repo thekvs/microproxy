@@ -13,7 +13,7 @@ type basicAuthData struct {
 }
 
 type basicAuth struct {
-	Users map[string]string
+	users map[string]string
 }
 
 func newBasicAuthFromFile(path string) (*basicAuth, error) {
@@ -36,16 +36,16 @@ func newBasicAuth(file io.Reader) (*basicAuth, error) {
 		return nil, err
 	}
 
-	h := &basicAuth{Users: make(map[string]string)}
+	h := &basicAuth{users: make(map[string]string)}
 
 	for _, record := range records {
 		if len(record) != 2 {
 			return nil, errors.New("invalid basic auth file format")
 		}
-		h.Users[record[0]] = record[1]
+		h.users[record[0]] = record[1]
 	}
 
-	if len(h.Users) == 0 {
+	if len(h.users) == 0 {
 		return nil, errors.New("auth file contains no data")
 	}
 
@@ -53,7 +53,7 @@ func newBasicAuth(file io.Reader) (*basicAuth, error) {
 }
 
 func (h *basicAuth) validate(authData *basicAuthData) bool {
-	realPassword, exists := h.Users[authData.user]
+	realPassword, exists := h.users[authData.user]
 	if !exists || realPassword != authData.password {
 		return false
 	}
