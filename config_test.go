@@ -29,7 +29,7 @@ func TestConfigFile(t *testing.T) {
 	expected.AllowedConnectPorts[0] = "443"
 	expected.AllowedConnectPorts[1] = "80"
 
-	conf := newConfiguration("microproxy.json")
+	conf := newConfigurationFromFile("microproxy.json")
 
 	if conf.Listen != expected.Listen {
 		t.Errorf("Got %v, expected %v", conf.Listen, expected.Listen)

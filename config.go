@@ -2,6 +2,7 @@ package main
 
 import (
 	"encoding/json"
+	"io"
 	"log"
 	"net"
 	"os"
@@ -42,13 +43,19 @@ func validateNetworks(networks []string) {
 	}
 }
 
-func newConfiguration(path string) *configuration {
+func newConfigurationFromFile(path string) *configuration {
 	file, err := os.Open(path)
 	if err != nil {
 		log.Fatal("can't open configuration file: ", err)
 	}
 
-	decoder := json.NewDecoder(file)
+	conf := newConfiguration(file)
+
+	return conf
+}
+
+func newConfiguration(data io.Reader) *configuration {
+	decoder := json.NewDecoder(data)
 	conf := &configuration{}
 	decoder.Decode(&conf)
 

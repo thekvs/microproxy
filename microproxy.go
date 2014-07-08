@@ -348,7 +348,7 @@ func main() {
 
 	flag.Parse()
 
-	conf := newConfiguration(*config)
+	conf := newConfigurationFromFile(*config)
 
 	proxy := createProxy(conf)
 	proxy.Verbose = *verbose
