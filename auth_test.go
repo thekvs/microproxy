@@ -334,3 +334,26 @@ func TestDigestAuthWithCurl(t *testing.T) {
 		t.Error("Expected", expected, "got", result)
 	}
 }
+
+func TestIPBasedAccessDenied(t *testing.T) {
+	expected := "Hello, World!"
+
+	background := httptest.NewServer(ConstantHanlder(expected))
+	defer background.Close()
+
+	client, proxy, proxyserver := oneShotProxy()
+	defer proxyserver.Close()
+
+	s := "{\"allowed_networks\": [\"172.16.11.0/24\"]}\n"
+	conf := newConfiguration(bytes.NewBuffer([]byte(s)))
+	setAllowedNetworksHandler(conf, proxy)
+
+	resp, err := client.Get(background.URL)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if resp.StatusCode != 403 {
+		t.Error("Expected status 403 status code, got", resp.Status)
+	}
+}
