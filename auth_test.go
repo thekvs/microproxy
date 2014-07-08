@@ -354,6 +354,39 @@ func TestIPBasedAccessDenied(t *testing.T) {
 	}
 
 	if resp.StatusCode != 403 {
-		t.Error("Expected status 403 status code, got", resp.Status)
+		t.Error("Expected 403 status code, got", resp.Status)
+	}
+}
+
+func TestIPBasedAccessAllowed(t *testing.T) {
+	expected := "Hello, World!"
+
+	background := httptest.NewServer(ConstantHanlder(expected))
+	defer background.Close()
+
+	client, proxy, proxyserver := oneShotProxy()
+	defer proxyserver.Close()
+
+	s := "{\"allowed_networks\": [\"127.0.0.1/32\"]}\n"
+	conf := newConfiguration(bytes.NewBuffer([]byte(s)))
+	setAllowedNetworksHandler(conf, proxy)
+
+	resp, err := client.Get(background.URL)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if resp.StatusCode != 200 {
+		t.Error("Expected 200 status code, got", resp.Status)
+	}
+
+	msg, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	actual := string(msg)
+	if actual != expected {
+		t.Errorf("Expected '%s', actual '%s'", expected, actual)
 	}
 }
