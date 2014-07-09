@@ -276,13 +276,12 @@ func setActivityLog(conf *configuration, proxy *goproxy.ProxyHttpServer) {
 
 func setSignalHandler(conf *configuration, proxy *goproxy.ProxyHttpServer, logger *proxyLogger) {
 	signalChannel := make(chan os.Signal)
-	signal.Notify(signalChannel, os.Interrupt, syscall.SIGUSR1)
+	signal.Notify(signalChannel, os.Interrupt, syscall.SIGTERM, syscall.SIGUSR1)
 
-	go func() {
-		for {
-			sig := <-signalChannel
+	signalHandler := func() {
+		for sig := range signalChannel {
 			switch sig {
-			case os.Interrupt:
+			case os.Interrupt, syscall.SIGTERM:
 				proxy.Logger.Println("got interrupt signal, exiting")
 				logger.close()
 				os.Exit(0)
@@ -294,7 +293,9 @@ func setSignalHandler(conf *configuration, proxy *goproxy.ProxyHttpServer, logge
 				setActivityLog(conf, proxy)
 			}
 		}
-	}()
+	}
+
+	go signalHandler()
 }
 
 func setAuthenticationHandler(conf *configuration, proxy *goproxy.ProxyHttpServer, logger *proxyLogger) {
