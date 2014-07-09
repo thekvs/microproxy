@@ -36,6 +36,12 @@ and this will build the binary in ```$GOPATH/bin```.
   * ```"off"``` -- do nothing, i.e. leave headear as is.
   * ```"delete"``` -- delete ```X-Forwarded-For``` header, this turns on stealth mode.
   * ```"truncate"``` -- delete all old ```X-Forwarded-For``` headers and insert a new one with client's IP address.
+* ```"via_header": "action"``` -- specifies how to handle ```Via``` HTTP protocol header. Avalible options are:
+  * ```"on"``` -- set ```Via``` header, this is a default choice.
+  * ```"off"``` -- do nothing with ```Via``` header.
+  * ```"delete"``` -- delete ```Via``` header.
+* ```"via_proxy_name": "name"``` -- this value will be used as the host name in the ```Via``` header, by default the server's
+host name will be used.
 * ```"allowed_networks": ["net1", ...]``` -- list of whitelisted networks in CIDR format.
 * ```"disallowed_networks": ["net1", ...]``` -- list of blacklisted networks in CIDR format.
 * ```"bind_ip": "ip"``` -- specify which IP will be used for outgoing connections.

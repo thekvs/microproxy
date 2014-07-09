@@ -4,6 +4,7 @@ import (
 	"github.com/elazarl/goproxy"
 
 	"flag"
+	"fmt"
 	"log"
 	"net"
 	"net/http"
@@ -30,7 +31,11 @@ const (
 	maintOk    int = iota
 )
 
-const proxyForwardedForHeader = "X-Forwarded-For"
+const (
+	proxyForwardedForHeader = "X-Forwarded-For"
+	proxyViaHeader          = "Via"
+)
+
 const tcpKeepAliveInterval = 1 * time.Minute
 
 type basicAuthRequest struct {
@@ -205,6 +210,26 @@ func setForwardedForHeaderHandler(conf *configuration, proxy *goproxy.ProxyHttpS
 	proxy.OnRequest().DoFunc(f)
 }
 
+func setViaHeaderHandler(conf *configuration, proxy *goproxy.ProxyHttpServer) {
+	handler := func(req *http.Request, ctx *goproxy.ProxyCtx) (*http.Request, *http.Response) {
+		switch conf.ViaHeader {
+		case "on":
+			header := req.Header.Get(proxyViaHeader)
+			if header == "" {
+				header = fmt.Sprintf("1.1 %s", conf.ViaProxyName)
+			} else {
+				header = fmt.Sprintf("%s, 1.1 %s", header, conf.ViaProxyName)
+			}
+			req.Header.Add(proxyViaHeader, header)
+		case "delete":
+			req.Header.Del(proxyViaHeader)
+		}
+		return req, nil
+	}
+
+	proxy.OnRequest().DoFunc(handler)
+}
+
 func makeCustomDial(localAddr *net.TCPAddr) func(string, string) (net.Conn, error) {
 	return func(network, addr string) (net.Conn, error) {
 		remoteAddr, err := net.ResolveTCPAddr(network, addr)
@@ -360,6 +385,7 @@ func main() {
 	setAllowedConnectPortsHandler(conf, proxy)
 	setAllowedNetworksHandler(conf, proxy)
 	setForwardedForHeaderHandler(conf, proxy)
+	setViaHeaderHandler(conf, proxy)
 	setSignalHandler(conf, proxy, logger)
 
 	// To be called first while processing handlers' stack,

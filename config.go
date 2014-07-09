@@ -20,6 +20,8 @@ type configuration struct {
 	AuthFile            string   `json:"auth_file"`
 	ForwardedFor        string   `json:"forwarded_for"`
 	BindIP              string   `json:"bind_ip"`
+	ViaHeader           string   `json:"via_header"`
+	ViaProxyName        string   `json:"via_proxy_name"`
 }
 
 func validateNetworks(networks []string) {
@@ -41,6 +43,17 @@ func validateNetworks(networks []string) {
 			}
 		}
 	}
+}
+
+func correctChoice(value string, avalibleOptions ...string) bool {
+	found := false
+	for _, choice := range avalibleOptions {
+		if value == choice {
+			found = true
+			break
+		}
+	}
+	return found
 }
 
 func newConfigurationFromFile(path string) *configuration {
@@ -93,10 +106,24 @@ func newConfiguration(data io.Reader) *configuration {
 		conf.ForwardedFor = "on"
 	}
 
-	allowedForwardedForValues := map[string]bool{"off": true, "on": true, "delete": true, "truncate": true}
-	_, found := allowedForwardedForValues[conf.ForwardedFor]
-	if !found {
-		log.Fatalf("unexpected value \"%v\" for ForwardedFor parameter", conf.ForwardedFor)
+	if !correctChoice(conf.ForwardedFor, "off", "on", "delete", "truncate") {
+		log.Fatalf("unexpected value \"%v\" for 'forwarded_for' configuration parameter", conf.ForwardedFor)
+	}
+
+	if conf.ViaHeader == "" {
+		conf.ViaHeader = "on"
+	}
+
+	if !correctChoice(conf.ViaHeader, "on", "off", "delete") {
+		log.Fatalf("unexpected value \"%v\" for 'via_header' configuration parameter", conf.ViaHeader)
+	}
+
+	if conf.ViaProxyName == "" && conf.ViaHeader == "on" {
+		hostname, err := os.Hostname()
+		if err != nil {
+			log.Fatalf("os.Hostname() failed: %v\n", err)
+		}
+		conf.ViaProxyName = hostname
 	}
 
 	return conf
