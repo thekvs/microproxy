@@ -3,6 +3,7 @@ package main
 import (
 	"bytes"
 	"crypto/md5"
+	"crypto/tls"
 	"encoding/base64"
 	"fmt"
 	"io"
@@ -12,6 +13,7 @@ import (
 	"net/url"
 	"os/exec"
 	"regexp"
+	"strconv"
 	"strings"
 	"testing"
 
@@ -45,7 +47,10 @@ func oneShotProxy() (client *http.Client, proxy *goproxy.ProxyHttpServer, s *htt
 	s = httptest.NewServer(proxy)
 
 	proxyURL, _ := url.Parse(s.URL)
-	tr := &http.Transport{Proxy: http.ProxyURL(proxyURL)}
+	tr := &http.Transport{
+		Proxy:           http.ProxyURL(proxyURL),
+		TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
+	}
 	client = &http.Client{Transport: tr}
 	return
 }
@@ -388,5 +393,54 @@ func TestIPBasedAccessAllowed(t *testing.T) {
 	actual := string(msg)
 	if actual != expected {
 		t.Errorf("Expected '%s', actual '%s'", expected, actual)
+	}
+}
+
+func TestHTTPSConnectDenied(t *testing.T) {
+	expected := "Hello, World!"
+
+	background := httptest.NewTLSServer(ConstantHanlder(expected))
+	defer background.Close()
+
+	client, proxy, proxyserver := oneShotProxy()
+	defer proxyserver.Close()
+
+	// test server'll bind to the port different from 443
+	s := fmt.Sprintf("{\"allowed_connect_ports\": [\"%d\"]}\n", 443)
+	conf := newConfiguration(bytes.NewBuffer([]byte(s)))
+	setAllowedConnectPortsHandler(conf, proxy)
+
+	_, err := client.Get(background.URL)
+	if err == nil {
+		t.Fatal(err)
+	}
+}
+
+func TestHTTPSConnectAllowed(t *testing.T) {
+	expected := "Hello, World!"
+
+	background := httptest.NewTLSServer(ConstantHanlder(expected))
+	defer background.Close()
+
+	parsedURL, err := url.Parse(background.URL)
+	port, err := strconv.ParseUint(strings.Split(parsedURL.Host, ":")[1], 10, 16)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	client, proxy, proxyserver := oneShotProxy()
+	defer proxyserver.Close()
+
+	s := fmt.Sprintf("{\"allowed_connect_ports\": [\"%d\"]}\n", port)
+	conf := newConfiguration(bytes.NewBuffer([]byte(s)))
+	setAllowedConnectPortsHandler(conf, proxy)
+
+	resp, err := client.Get(background.URL)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if resp.StatusCode != 200 {
+		t.Error("Expected 200 status code, got", resp.Status)
 	}
 }
