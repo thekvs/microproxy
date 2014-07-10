@@ -431,7 +431,7 @@ func TestHTTPSConnectAllowed(t *testing.T) {
 	client, proxy, proxyserver := oneShotProxy()
 	defer proxyserver.Close()
 
-	s := fmt.Sprintf("{\"allowed_connect_ports\": [\"%d\"]}\n", port)
+	s := fmt.Sprintf("{\"allowed_connect_ports\": [%d]}\n", port)
 	conf := newConfiguration(bytes.NewBuffer([]byte(s)))
 	setAllowedConnectPortsHandler(conf, proxy)
 

@@ -2,7 +2,7 @@
     "listen": "127.0.0.1:3129",
     "access_log": "/tmp/microproxy.access.log",
     "activity_log": "/tmp/microproxy.error.log",
-    "allowed_connect_ports": ["443", "80"],
+    "allowed_connect_ports": [443, 80],
     "auth_file": "auth.txt",
     "auth_type": "basic",
     "auth_realm": "proxy",

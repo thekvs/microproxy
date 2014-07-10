@@ -2,7 +2,7 @@ package main
 
 import "testing"
 
-func compareSlices(s1 []string, s2 []string) bool {
+func compareSlices(s1 []int, s2 []int) bool {
 	if len(s1) == len(s2) {
 		for i, v := range s1 {
 			if v != s2[i] {
@@ -24,10 +24,10 @@ func TestConfigFile(t *testing.T) {
 		AuthRealm:           "proxy",
 		AuthFile:            "auth.txt",
 		ForwardedForHeader:  "on",
-		AllowedConnectPorts: make([]string, 2)}
+		AllowedConnectPorts: make([]int, 2)}
 
-	expected.AllowedConnectPorts[0] = "443"
-	expected.AllowedConnectPorts[1] = "80"
+	expected.AllowedConnectPorts[0] = 443
+	expected.AllowedConnectPorts[1] = 80
 
 	conf := newConfigurationFromFile("microproxy.json")
 

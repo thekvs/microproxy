@@ -11,6 +11,7 @@ import (
 	"os"
 	"os/signal"
 	"regexp"
+	"strconv"
 	"strings"
 	"syscall"
 	"time"
@@ -172,7 +173,7 @@ func setAllowedConnectPortsHandler(conf *configuration, proxy *goproxy.ProxyHttp
 	if conf.AllowedConnectPorts != nil && len(conf.AllowedConnectPorts) > 0 {
 		ports := make([]string, len(conf.AllowedConnectPorts))
 		for i, v := range conf.AllowedConnectPorts {
-			ports[i] = ":" + v
+			ports[i] = ":" + strconv.Itoa(v)
 		}
 		rx := "(" + strings.Join(ports, "|") + ")$"
 		proxy.OnRequest(goproxy.Not(goproxy.ReqHostMatches(regexp.MustCompile(rx)))).HandleConnect(goproxy.AlwaysReject)

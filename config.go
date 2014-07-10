@@ -12,7 +12,7 @@ type configuration struct {
 	Listen              string   `json:"listen"`
 	AccessLog           string   `json:"access_log"`
 	ActivityLog         string   `json:"activity_log"`
-	AllowedConnectPorts []string `json:"allowed_connect_ports"`
+	AllowedConnectPorts []int    `json:"allowed_connect_ports"`
 	AllowedNetworks     []string `json:"allowed_networks"`
 	DisallowedNetworks  []string `json:"disallowed_networks"`
 	AuthRealm           string   `json:"auth_realm"`
@@ -89,8 +89,8 @@ func newConfiguration(data io.Reader) *configuration {
 
 	// by default allow connect only to the https protocol port
 	if conf.AllowedConnectPorts == nil || len(conf.AllowedConnectPorts) == 0 {
-		conf.AllowedConnectPorts = make([]string, 1)
-		conf.AllowedConnectPorts[0] = "443"
+		conf.AllowedConnectPorts = make([]int, 1)
+		conf.AllowedConnectPorts[0] = 443
 	}
 
 	if conf.AuthType == "" && conf.AuthFile != "" {
