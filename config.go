@@ -18,7 +18,7 @@ type configuration struct {
 	AuthRealm           string   `json:"auth_realm"`
 	AuthType            string   `json:"auth_type"`
 	AuthFile            string   `json:"auth_file"`
-	ForwardedFor        string   `json:"forwarded_for"`
+	ForwardedForHeader  string   `json:"forwarded_for_header"`
 	BindIP              string   `json:"bind_ip"`
 	ViaHeader           string   `json:"via_header"`
 	ViaProxyName        string   `json:"via_proxy_name"`
@@ -102,12 +102,12 @@ func newConfiguration(data io.Reader) *configuration {
 	}
 
 	// by default set X-Forwarded-For header
-	if conf.ForwardedFor == "" {
-		conf.ForwardedFor = "on"
+	if conf.ForwardedForHeader == "" {
+		conf.ForwardedForHeader = "on"
 	}
 
-	if !correctChoice(conf.ForwardedFor, "off", "on", "delete", "truncate") {
-		log.Fatalf("unexpected value \"%v\" for 'forwarded_for' configuration parameter", conf.ForwardedFor)
+	if !correctChoice(conf.ForwardedForHeader, "off", "on", "delete", "truncate") {
+		log.Fatalf("unexpected value \"%v\" for 'forwarded_for_header' configuration parameter", conf.ForwardedForHeader)
 	}
 
 	if conf.ViaHeader == "" {

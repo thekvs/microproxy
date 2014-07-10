@@ -187,7 +187,7 @@ func setForwardedForHeaderHandler(conf *configuration, proxy *goproxy.ProxyHttpS
 			return req, nil
 		}
 
-		switch conf.ForwardedFor {
+		switch conf.ForwardedForHeader {
 		case "on":
 			header := req.Header.Get(proxyForwardedForHeader)
 			if header == "" {

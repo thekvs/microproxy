@@ -6,6 +6,6 @@
     "auth_file": "auth.txt",
     "auth_type": "basic",
     "auth_realm": "proxy",
-    "forwarded_for": "on",
+    "forwarded_for_header": "on",
     "allowed_networks": ["127.0.0.1/32"]
 }

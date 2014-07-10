@@ -31,7 +31,7 @@ and this will build the binary in ```$GOPATH/bin```.
   * ```"basic"``` -- use Basic authentication scheme.
   * ```"digest"``` -- use Digest authentication scheme.
 * ```"auth_realm": "realmstring"``` -- realm name which is to be reported to the client for the proxy authentication scheme.
-* ```"forwarded_for": "action"``` -- specifies how to handle ```X-Forwarded-For``` HTTP protocol header. Avalible options are:
+* ```"forwarded_for_header": "action"``` -- specifies how to handle ```X-Forwarded-For``` HTTP protocol header. Avalible options are:
   * ```"on"``` -- set ```X-Forwarded-For``` header with client's IP address, this is a default choice.
   * ```"off"``` -- do nothing, i.e. leave headear as is.
   * ```"delete"``` -- delete ```X-Forwarded-For``` header, this turns on stealth mode.

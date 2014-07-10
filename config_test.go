@@ -23,7 +23,7 @@ func TestConfigFile(t *testing.T) {
 		AuthType:            "basic",
 		AuthRealm:           "proxy",
 		AuthFile:            "auth.txt",
-		ForwardedFor:        "on",
+		ForwardedForHeader:  "on",
 		AllowedConnectPorts: make([]string, 2)}
 
 	expected.AllowedConnectPorts[0] = "443"
@@ -55,7 +55,7 @@ func TestConfigFile(t *testing.T) {
 		t.Errorf("Got %v, expected %v", conf.AuthType, expected.AuthType)
 	}
 
-	if conf.ForwardedFor != expected.ForwardedFor {
-		t.Errorf("Got %v, expected %v", conf.ForwardedFor, expected.ForwardedFor)
+	if conf.ForwardedForHeader != expected.ForwardedForHeader {
+		t.Errorf("Got %v, expected %v", conf.ForwardedForHeader, expected.ForwardedForHeader)
 	}
 }
