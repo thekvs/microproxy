@@ -1,8 +1,12 @@
 package main
 
 import (
+	"github.com/sigu-399/gojsonschema"
+
 	"encoding/json"
+	"fmt"
 	"io"
+	"io/ioutil"
 	"log"
 	"net"
 	"os"
@@ -22,6 +26,51 @@ type configuration struct {
 	BindIP              string   `json:"bind_ip"`
 	ViaHeader           string   `json:"via_header"`
 	ViaProxyName        string   `json:"via_proxy_name"`
+}
+
+const (
+	defaultListenAddress      = "127.0.0.1:3128"
+	defaultAllowedNetwork     = "127.0.0.1/32"
+	defaultAllowedConnectPort = 443
+)
+
+func validateConfigurationFileSchema(fileName string) {
+	var document interface{}
+	err := json.Unmarshal([]byte(validationSchema), &document)
+	if err != nil {
+		log.Fatalf("Couldn't parse JSON schema: %v", err)
+	}
+
+	schema, err := gojsonschema.NewJsonSchemaDocument(document)
+	if err != nil {
+		log.Fatalf("Error while loading schema: %v\n", err)
+	}
+
+	data, err := os.Open(fileName)
+	if err != nil {
+		log.Fatalf("Couldn't open configuration file: %v", err)
+	}
+
+	buffer, err := ioutil.ReadAll(data)
+	if err != nil {
+		log.Fatalf("Couldn't read configuration file: %v\n", err)
+	}
+
+	var config interface{}
+	err = json.Unmarshal(buffer, &config)
+	if err != nil {
+		log.Fatalf("Couldn't parse configuration file: %v\n", err)
+	}
+
+	result := schema.Validate(config)
+	if !result.Valid() {
+		fmt.Println("Configuration file is not valid:")
+		// Loop through errors
+		for _, desc := range result.Errors() {
+			fmt.Printf(" %s\n", desc)
+		}
+		os.Exit(1)
+	}
 }
 
 func validateNetworks(networks []string) {
@@ -45,17 +94,6 @@ func validateNetworks(networks []string) {
 	}
 }
 
-func correctChoice(value string, avalibleOptions ...string) bool {
-	found := false
-	for _, choice := range avalibleOptions {
-		if value == choice {
-			found = true
-			break
-		}
-	}
-	return found
-}
-
 func newConfigurationFromFile(path string) *configuration {
 	file, err := os.Open(path)
 	if err != nil {
@@ -73,14 +111,14 @@ func newConfiguration(data io.Reader) *configuration {
 	decoder.Decode(&conf)
 
 	if conf.Listen == "" {
-		conf.Listen = "127.0.0.1:3128"
+		conf.Listen = defaultListenAddress
 	}
 
 	// if no auth. enabled allow only from 127.0.0.1/32 if not deliberatly specified otherwise
 	if conf.AllowedNetworks == nil || len(conf.AllowedNetworks) == 0 {
 		if conf.AuthFile == "" || conf.AuthType == "" {
 			conf.AllowedNetworks = make([]string, 1)
-			conf.AllowedNetworks[0] = "127.0.0.1/32"
+			conf.AllowedNetworks[0] = defaultAllowedNetwork
 		}
 	}
 
@@ -90,15 +128,11 @@ func newConfiguration(data io.Reader) *configuration {
 	// by default allow connect only to the https protocol port
 	if conf.AllowedConnectPorts == nil || len(conf.AllowedConnectPorts) == 0 {
 		conf.AllowedConnectPorts = make([]int, 1)
-		conf.AllowedConnectPorts[0] = 443
+		conf.AllowedConnectPorts[0] = defaultAllowedConnectPort
 	}
 
 	if conf.AuthType == "" && conf.AuthFile != "" {
-		log.Fatal("missed mandatoty configuration parameter \"AuthType\"")
-	}
-
-	if conf.AuthType != "basic" && conf.AuthType != "digest" && conf.AuthType != "" {
-		log.Fatalf("unexpected value \"%v\" for AuthType parameter", conf.AuthType)
+		log.Fatal("missed mandatoty configuration parameter 'auth_type'")
 	}
 
 	// by default set X-Forwarded-For header
@@ -106,16 +140,8 @@ func newConfiguration(data io.Reader) *configuration {
 		conf.ForwardedForHeader = "on"
 	}
 
-	if !correctChoice(conf.ForwardedForHeader, "off", "on", "delete", "truncate") {
-		log.Fatalf("unexpected value \"%v\" for 'forwarded_for_header' configuration parameter", conf.ForwardedForHeader)
-	}
-
 	if conf.ViaHeader == "" {
 		conf.ViaHeader = "on"
-	}
-
-	if !correctChoice(conf.ViaHeader, "on", "off", "delete") {
-		log.Fatalf("unexpected value \"%v\" for 'via_header' configuration parameter", conf.ViaHeader)
 	}
 
 	if conf.ViaProxyName == "" && conf.ViaHeader == "on" {
@@ -128,3 +154,75 @@ func newConfiguration(data io.Reader) *configuration {
 
 	return conf
 }
+
+const validationSchema = `
+{
+    "type": "object",
+    "properties": {
+        "listen": {
+            "type": "string"
+        },
+        "bind_ip": {
+            "type": "string"
+        },
+        "access_log": {
+            "type": "string"
+        },
+        "activity_log": {
+            "type": "string"
+        },
+        "auth_file": {
+            "type": "string"
+        },
+        "auth_type": {
+            "type": "string",
+            "enum": [
+                "basic",
+                "digest"
+            ]
+        },
+        "auth_realm": {
+            "type": "string"
+        },
+        "forwarded_for_header": {
+            "type": "string",
+            "enum": [
+                "on",
+                "off",
+                "delete",
+                "truncate"
+            ]
+        },
+        "via_header": {
+            "type": "string",
+            "enum": [
+                "on",
+                "off",
+                "delete"
+            ]
+        },
+        "via_proxy_name": {
+            "type": "string"
+        },
+        "allowed_networks": {
+            "items": {
+                "type": "string"
+            }
+        },
+        "disallowed_networks": {
+            "items": {
+                "type": "string"
+            }
+        },
+        "allowed_connect_ports": {
+            "items": {
+                "type": "integer",
+                "maximum": 65535,
+                "minimum": 1
+            }
+        }
+    },
+    "additionalProperties": false
+}
+
+`

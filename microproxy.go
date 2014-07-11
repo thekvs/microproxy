@@ -375,6 +375,10 @@ func main() {
 
 	flag.Parse()
 
+	// Validate JSON schema of configuration file.
+	// If it is not correct print error message and call os.Exit(1).
+	validateConfigurationFileSchema(*config)
+
 	conf := newConfigurationFromFile(*config)
 
 	proxy := createProxy(conf)
