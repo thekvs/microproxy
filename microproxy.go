@@ -370,19 +370,25 @@ func setHTTPLoggingHandler(proxy *goproxy.ProxyHttpServer, logger *proxyLogger) 
 }
 
 func main() {
-	config := flag.String("config", "microproxy.json", "proxy configuration file")
-	verbose := flag.Bool("v", false, "enable verbose debug mode")
+	configFile := flag.String("config", "microproxy.json", "proxy configuration file")
+	testConfigOnly := flag.Bool("t", false, "only test configuration file")
+	verboseMode := flag.Bool("v", false, "enable verbose debug mode")
 
 	flag.Parse()
 
 	// Validate JSON schema of configuration file.
 	// If it is not correct print error message and call os.Exit(1).
-	validateConfigurationFileSchema(*config)
+	validateConfigurationFileSchema(*configFile)
 
-	conf := newConfigurationFromFile(*config)
+	if *testConfigOnly == true {
+		fmt.Println("Configuration file seems ok.")
+		os.Exit(0)
+	}
+
+	conf := newConfigurationFromFile(*configFile)
 
 	proxy := createProxy(conf)
-	proxy.Verbose = *verbose
+	proxy.Verbose = *verboseMode
 
 	logger := newProxyLogger(conf)
 

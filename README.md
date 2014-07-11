@@ -50,7 +50,8 @@ host name will be used.
 ```
 $ ./microproxy --config microproxy.json
 ```
-To enable debug mode, add ```-v``` switch.
+To enable debug mode, add ```-v``` switch. To only test configuration file correctness add ```-t``` switch,
+i.e. ```$ ./microproxy --config microproxy.json -t```
 
 This program does not support daemonization, it's better to use other tools like FreeBSD's [daemon](http://www.freebsd.org/cgi/man.cgi?query=daemon&sektion=8) or Linux's [daemonize](http://software.clapper.org/daemonize/).
 
