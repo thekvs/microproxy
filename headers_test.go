@@ -68,3 +68,41 @@ func TestCustomHeaders(t *testing.T) {
 		t.Errorf("Expected '%s', actual '%s'", expectedResponse, actualResponse)
 	}
 }
+
+func TestViaHeaders(t *testing.T) {
+	expectedResponse := "OK"
+	expectedHeaders := map[string]string{
+		"Via": "1.1 octopus",
+	}
+
+	handler := &myHandler{headers: expectedHeaders}
+
+	background := httptest.NewServer(handler)
+	defer background.Close()
+
+	client, proxy, proxyserver := oneShotProxy()
+	defer proxyserver.Close()
+
+	s := fmt.Sprint(`{"via_header": "on", "via_proxy_name": "octopus"}`)
+	conf := newConfiguration(bytes.NewBuffer([]byte(s)))
+	setViaHeaderHandler(conf, proxy)
+
+	resp, err := client.Get(background.URL)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if resp.StatusCode != 200 {
+		t.Error("Expected 200 status code, got", resp.Status)
+	}
+
+	msg, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	actualResponse := string(msg)
+	if actualResponse != expectedResponse {
+		t.Errorf("Expected '%s', actual '%s'", expectedResponse, actualResponse)
+	}
+}
