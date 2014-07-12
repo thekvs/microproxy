@@ -13,19 +13,20 @@ import (
 )
 
 type configuration struct {
-	Listen              string   `json:"listen"`
-	AccessLog           string   `json:"access_log"`
-	ActivityLog         string   `json:"activity_log"`
-	AllowedConnectPorts []int    `json:"allowed_connect_ports"`
-	AllowedNetworks     []string `json:"allowed_networks"`
-	DisallowedNetworks  []string `json:"disallowed_networks"`
-	AuthRealm           string   `json:"auth_realm"`
-	AuthType            string   `json:"auth_type"`
-	AuthFile            string   `json:"auth_file"`
-	ForwardedForHeader  string   `json:"forwarded_for_header"`
-	BindIP              string   `json:"bind_ip"`
-	ViaHeader           string   `json:"via_header"`
-	ViaProxyName        string   `json:"via_proxy_name"`
+	Listen              string            `json:"listen"`
+	AccessLog           string            `json:"access_log"`
+	ActivityLog         string            `json:"activity_log"`
+	AllowedConnectPorts []int             `json:"allowed_connect_ports"`
+	AllowedNetworks     []string          `json:"allowed_networks"`
+	DisallowedNetworks  []string          `json:"disallowed_networks"`
+	AuthRealm           string            `json:"auth_realm"`
+	AuthType            string            `json:"auth_type"`
+	AuthFile            string            `json:"auth_file"`
+	ForwardedForHeader  string            `json:"forwarded_for_header"`
+	BindIP              string            `json:"bind_ip"`
+	ViaHeader           string            `json:"via_header"`
+	ViaProxyName        string            `json:"via_proxy_name"`
+	AddHeaders          map[string]string `json:"add_headers"`
 }
 
 const (
@@ -219,6 +220,14 @@ const validationSchema = `
                 "type": "integer",
                 "maximum": 65535,
                 "minimum": 1
+            }
+        },
+        "add_headers": {
+            "type": "object",
+            "patternProperties": {
+                "^*": {
+                    "type": "string"
+                }
             }
         }
     },

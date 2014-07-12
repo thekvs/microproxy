@@ -45,6 +45,8 @@ host name will be used.
 * ```"allowed_networks": ["net1", ...]``` -- list of whitelisted networks in CIDR format.
 * ```"disallowed_networks": ["net1", ...]``` -- list of blacklisted networks in CIDR format.
 * ```"bind_ip": "ip"``` -- specify which IP will be used for outgoing connections.
+* ```"add_headers": {"header": "value", ...}``` -- adds specified headers to outgoing HTTP requests, this option will not
+work for HTTPS connections.
 
 ## Usage
 ```

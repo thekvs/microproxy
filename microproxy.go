@@ -231,6 +231,22 @@ func setViaHeaderHandler(conf *configuration, proxy *goproxy.ProxyHttpServer) {
 	proxy.OnRequest().DoFunc(handler)
 }
 
+func setAddCustomHeadersHandler(conf *configuration, proxy *goproxy.ProxyHttpServer) {
+	handler := func(req *http.Request, ctx *goproxy.ProxyCtx) (*http.Request, *http.Response) {
+		for header, value := range conf.AddHeaders {
+			headerExists := (req.Header.Get(header) != "")
+			if !headerExists {
+				req.Header.Add(header, value)
+			}
+		}
+		return req, nil
+	}
+
+	if len(conf.AddHeaders) > 0 {
+		proxy.OnRequest().DoFunc(handler)
+	}
+}
+
 func makeCustomDial(localAddr *net.TCPAddr) func(string, string) (net.Conn, error) {
 	return func(network, addr string) (net.Conn, error) {
 		remoteAddr, err := net.ResolveTCPAddr(network, addr)
@@ -397,6 +413,7 @@ func main() {
 	setAllowedNetworksHandler(conf, proxy)
 	setForwardedForHeaderHandler(conf, proxy)
 	setViaHeaderHandler(conf, proxy)
+	setAddCustomHeadersHandler(conf, proxy)
 	setSignalHandler(conf, proxy, logger)
 
 	// To be called first while processing handlers' stack,
