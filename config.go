@@ -96,9 +96,11 @@ func validateNetworks(networks []string) {
 }
 
 func validateIP(addr string) {
-	ip := net.ParseIP(addr)
-	if ip == nil {
-		log.Fatalf("incorrect IP address %s", addr)
+	if addr != "" {
+		ip := net.ParseIP(addr)
+		if ip == nil {
+			log.Fatalf("incorrect IP address %s", addr)
+		}
 	}
 }
 
