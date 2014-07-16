@@ -95,6 +95,13 @@ func validateNetworks(networks []string) {
 	}
 }
 
+func validateIP(addr string) {
+	ip := net.ParseIP(addr)
+	if ip == nil {
+		log.Fatalf("incorrect IP address %s", addr)
+	}
+}
+
 func newConfigurationFromFile(path string) *configuration {
 	file, err := os.Open(path)
 	if err != nil {
@@ -125,6 +132,8 @@ func newConfiguration(data io.Reader) *configuration {
 
 	validateNetworks(conf.AllowedNetworks)
 	validateNetworks(conf.DisallowedNetworks)
+
+	validateIP(conf.BindIP)
 
 	// by default allow connect only to the https protocol port
 	if conf.AllowedConnectPorts == nil || len(conf.AllowedConnectPorts) == 0 {
