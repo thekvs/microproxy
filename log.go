@@ -1,7 +1,7 @@
 package main
 
 import (
-	"github.com/elazarl/goproxy"
+	"gopkg.in/elazarl/goproxy.v1"
 
 	"fmt"
 	"io"

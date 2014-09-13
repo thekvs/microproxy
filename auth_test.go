@@ -1,6 +1,8 @@
 package main
 
 import (
+	"gopkg.in/elazarl/goproxy.v1"
+
 	"bytes"
 	"crypto/md5"
 	"crypto/tls"
@@ -16,8 +18,6 @@ import (
 	"strconv"
 	"strings"
 	"testing"
-
-	"github.com/elazarl/goproxy"
 )
 
 // >>> import hashlib

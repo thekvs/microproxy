@@ -1,6 +1,8 @@
 package main
 
 import (
+	"gopkg.in/elazarl/goproxy.v1"
+
 	"bytes"
 	"encoding/base64"
 	"fmt"
@@ -8,8 +10,6 @@ import (
 	"net/http"
 	"regexp"
 	"strings"
-
-	"github.com/elazarl/goproxy"
 )
 
 type basicAuthFunc func(authData *basicAuthData) *basicAuthResponse
