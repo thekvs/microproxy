@@ -1,7 +1,7 @@
 package main
 
 import (
-	"github.com/sigu-399/gojsonschema"
+	"github.com/xeipuuv/gojsonschema"
 
 	"encoding/json"
 	"fmt"
