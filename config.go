@@ -36,16 +36,7 @@ const (
 )
 
 func validateConfigurationFileSchema(fileName string) {
-	var document interface{}
-	err := json.Unmarshal([]byte(validationSchema), &document)
-	if err != nil {
-		log.Fatalf("Couldn't parse JSON schema: %v", err)
-	}
-
-	schema, err := gojsonschema.NewJsonSchemaDocument(document)
-	if err != nil {
-		log.Fatalf("Error while loading schema: %v\n", err)
-	}
+	schema := gojsonschema.NewStringLoader(validationSchema)
 
 	data, err := os.Open(fileName)
 	if err != nil {
@@ -57,13 +48,13 @@ func validateConfigurationFileSchema(fileName string) {
 		log.Fatalf("Couldn't read configuration file: %v\n", err)
 	}
 
-	var config interface{}
-	err = json.Unmarshal(buffer, &config)
+	config := gojsonschema.NewStringLoader(string(buffer))
+
+	result, err := gojsonschema.Validate(schema, config)
 	if err != nil {
-		log.Fatalf("Couldn't parse configuration file: %v\n", err)
+		panic(err.Error())
 	}
 
-	result := schema.Validate(config)
 	if !result.Valid() {
 		fmt.Println("Configuration file is not valid:")
 		// Loop through errors
