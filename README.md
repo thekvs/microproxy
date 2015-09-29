@@ -24,7 +24,7 @@ and this will build the binary in ```$GOPATH/bin```.
 
 * ```"listen": "ip:port"``` -- ip address and port where to listen for incoming proxy request. Default: ```"127.0.0.1:3128"```
 * ```"access_log": "path"``` -- path to a file where to write requested through proxy urls.
-* ```"activity_log": "path"``` -- path to a file where to write debug and auxilary information.
+* ```"activity_log": "path"``` -- path to a file where to write debug and auxiliary information.
 * ```"allowed_connect_ports": [port1, port2, ...]``` -- list of allowed port to CONNECT to. Default: ```[443]```
 * ```"auth_file": "path"``` -- path to a file with users' passwords. If you use "digest" auth. scheme this file has to be in the format used by Apache's [htdigest](http://httpd.apache.org/docs/2.4/programs/htdigest.html) utility, for "basic" scheme it has to be in the format used by Apache's [htpasswd](http://httpd.apache.org/docs/2.4/programs/htpasswd.html) utility with -p option, i.e. created as ```$ htpasswd -c -p auth.txt username```.
 * ```"auth_type": "type"``` -- authentication scheme type. Avalible options are:
