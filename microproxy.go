@@ -233,10 +233,16 @@ func setViaHeaderHandler(conf *configuration, proxy *goproxy.ProxyHttpServer) {
 
 func setAddCustomHeadersHandler(conf *configuration, proxy *goproxy.ProxyHttpServer) {
 	handler := func(req *http.Request, ctx *goproxy.ProxyCtx) (*http.Request, *http.Response) {
-		for header, value := range conf.AddHeaders {
-			headerExists := (req.Header.Get(header) != "")
-			if !headerExists {
-				req.Header.Add(header, value)
+		for _, headerData := range conf.AddHeaders {
+			if len(headerData) == 2 {
+				header := headerData[0]
+				value := headerData[1]
+				if len(header) > 0 && len(value) > 0 {
+					headerExists := (req.Header.Get(header) != "")
+					if !headerExists {
+						req.Header.Add(header, value)
+					}
+				}
 			}
 		}
 		return req, nil
@@ -392,16 +398,12 @@ func main() {
 
 	flag.Parse()
 
-	// Validate JSON schema of configuration file.
-	// If it is not correct print error message and call os.Exit(1).
-	validateConfigurationFileSchema(*configFile)
+	conf := newConfigurationFromFile(*configFile)
 
 	if *testConfigOnly == true {
 		fmt.Println("Configuration file seems ok.")
 		os.Exit(0)
 	}
-
-	conf := newConfigurationFromFile(*configFile)
 
 	proxy := createProxy(conf)
 	proxy.Verbose = *verboseMode

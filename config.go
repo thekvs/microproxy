@@ -1,32 +1,29 @@
 package main
 
 import (
-	"github.com/xeipuuv/gojsonschema"
-
-	"encoding/json"
-	"fmt"
 	"io"
-	"io/ioutil"
 	"log"
 	"net"
 	"os"
+
+	"github.com/BurntSushi/toml"
 )
 
 type configuration struct {
-	Listen              string            `json:"listen"`
-	AccessLog           string            `json:"access_log"`
-	ActivityLog         string            `json:"activity_log"`
-	AllowedConnectPorts []int             `json:"allowed_connect_ports"`
-	AllowedNetworks     []string          `json:"allowed_networks"`
-	DisallowedNetworks  []string          `json:"disallowed_networks"`
-	AuthRealm           string            `json:"auth_realm"`
-	AuthType            string            `json:"auth_type"`
-	AuthFile            string            `json:"auth_file"`
-	ForwardedForHeader  string            `json:"forwarded_for_header"`
-	BindIP              string            `json:"bind_ip"`
-	ViaHeader           string            `json:"via_header"`
-	ViaProxyName        string            `json:"via_proxy_name"`
-	AddHeaders          map[string]string `json:"add_headers"`
+	Listen              string     `toml:"listen"`
+	AccessLog           string     `toml:"access_log"`
+	ActivityLog         string     `toml:"activity_log"`
+	AllowedConnectPorts []int      `toml:"allowed_connect_ports"`
+	AllowedNetworks     []string   `toml:"allowed_networks"`
+	DisallowedNetworks  []string   `toml:"disallowed_networks"`
+	AuthRealm           string     `toml:"auth_realm"`
+	AuthType            string     `toml:"auth_type"`
+	AuthFile            string     `toml:"auth_file"`
+	ForwardedForHeader  string     `toml:"forwarded_for_header"`
+	BindIP              string     `toml:"bind_ip"`
+	ViaHeader           string     `toml:"via_header"`
+	ViaProxyName        string     `toml:"via_proxy_name"`
+	AddHeaders          [][]string `toml:"add_headers"`
 }
 
 const (
@@ -34,36 +31,6 @@ const (
 	defaultAllowedNetwork     = "127.0.0.1/32"
 	defaultAllowedConnectPort = 443
 )
-
-func validateConfigurationFileSchema(fileName string) {
-	schema := gojsonschema.NewStringLoader(validationSchema)
-
-	data, err := os.Open(fileName)
-	if err != nil {
-		log.Fatalf("Couldn't open configuration file: %v", err)
-	}
-
-	buffer, err := ioutil.ReadAll(data)
-	if err != nil {
-		log.Fatalf("Couldn't read configuration file: %v\n", err)
-	}
-
-	config := gojsonschema.NewStringLoader(string(buffer))
-
-	result, err := gojsonschema.Validate(schema, config)
-	if err != nil {
-		panic(err.Error())
-	}
-
-	if !result.Valid() {
-		fmt.Println("Configuration file is not valid:")
-		// Loop through errors
-		for _, desc := range result.Errors() {
-			fmt.Printf(" %s\n", desc)
-		}
-		os.Exit(1)
-	}
-}
 
 func validateNetworks(networks []string) {
 	if networks != nil && len(networks) > 0 {
@@ -95,6 +62,45 @@ func validateIP(addr string) {
 	}
 }
 
+func validateAuthType(authType string) {
+	validValues := map[string]bool{
+		"basic":  true,
+		"digest": true,
+	}
+
+	_, ok := validValues[authType]
+	if !ok {
+		log.Fatalf("Incorrect authentication type '%s'", authType)
+	}
+}
+
+func validateForwardedForHeaderAction(action string) {
+	validValues := map[string]bool{
+		"on":       true,
+		"off":      true,
+		"delete":   true,
+		"truncate": true,
+	}
+
+	_, ok := validValues[action]
+	if !ok {
+		log.Fatalf("Incorrect 'Forwarded-For' header action '%s'", action)
+	}
+}
+
+func validateViaHeaderAction(action string) {
+	validValues := map[string]bool{
+		"on":     true,
+		"off":    true,
+		"delete": true,
+	}
+
+	_, ok := validValues[action]
+	if !ok {
+		log.Fatalf("Incorrect 'Via' header action '%s'", action)
+	}
+}
+
 func newConfigurationFromFile(path string) *configuration {
 	file, err := os.Open(path)
 	if err != nil {
@@ -107,9 +113,10 @@ func newConfigurationFromFile(path string) *configuration {
 }
 
 func newConfiguration(data io.Reader) *configuration {
-	decoder := json.NewDecoder(data)
-	conf := &configuration{}
-	decoder.Decode(&conf)
+	var conf configuration
+	if _, err := toml.DecodeReader(data, &conf); err != nil {
+		log.Fatalf("Couldn't parse configuration file: %v", err)
+	}
 
 	if conf.Listen == "" {
 		conf.Listen = defaultListenAddress
@@ -125,7 +132,6 @@ func newConfiguration(data io.Reader) *configuration {
 
 	validateNetworks(conf.AllowedNetworks)
 	validateNetworks(conf.DisallowedNetworks)
-
 	validateIP(conf.BindIP)
 
 	// by default allow connect only to the https protocol port
@@ -155,85 +161,9 @@ func newConfiguration(data io.Reader) *configuration {
 		conf.ViaProxyName = hostname
 	}
 
-	return conf
-}
+	validateAuthType(conf.AuthType)
+	validateForwardedForHeaderAction(conf.ForwardedForHeader)
+	validateViaHeaderAction(conf.ViaHeader)
 
-const validationSchema = `
-{
-    "type": "object",
-    "properties": {
-        "listen": {
-            "type": "string"
-        },
-        "bind_ip": {
-            "type": "string"
-        },
-        "access_log": {
-            "type": "string"
-        },
-        "activity_log": {
-            "type": "string"
-        },
-        "auth_file": {
-            "type": "string"
-        },
-        "auth_type": {
-            "type": "string",
-            "enum": [
-                "basic",
-                "digest"
-            ]
-        },
-        "auth_realm": {
-            "type": "string"
-        },
-        "forwarded_for_header": {
-            "type": "string",
-            "enum": [
-                "on",
-                "off",
-                "delete",
-                "truncate"
-            ]
-        },
-        "via_header": {
-            "type": "string",
-            "enum": [
-                "on",
-                "off",
-                "delete"
-            ]
-        },
-        "via_proxy_name": {
-            "type": "string"
-        },
-        "allowed_networks": {
-            "items": {
-                "type": "string"
-            }
-        },
-        "disallowed_networks": {
-            "items": {
-                "type": "string"
-            }
-        },
-        "allowed_connect_ports": {
-            "items": {
-                "type": "integer",
-                "maximum": 65535,
-                "minimum": 1
-            }
-        },
-        "add_headers": {
-            "type": "object",
-            "patternProperties": {
-                "^*": {
-                    "type": "string"
-                }
-            }
-        }
-    },
-    "additionalProperties": false
+	return &conf
 }
-
-`

@@ -3,31 +3,19 @@
 
 [[projects]]
   branch = "master"
+  name = "github.com/BurntSushi/toml"
+  packages = ["."]
+  revision = "a368813c5e648fee92e5f6c30e3944ff9d5e8895"
+
+[[projects]]
+  branch = "master"
   name = "github.com/elazarl/goproxy"
   packages = ["."]
   revision = "aacba83f36a55ac31cbb71c06547a328c0cd1604"
 
-[[projects]]
-  branch = "master"
-  name = "github.com/xeipuuv/gojsonpointer"
-  packages = ["."]
-  revision = "6fe8760cad3569743d51ddbb243b26f8456742dc"
-
-[[projects]]
-  branch = "master"
-  name = "github.com/xeipuuv/gojsonreference"
-  packages = ["."]
-  revision = "e02fc20de94c78484cd5ffb007f8af96be030a45"
-
-[[projects]]
-  branch = "master"
-  name = "github.com/xeipuuv/gojsonschema"
-  packages = ["."]
-  revision = "0c8571ac0ce161a5feb57375a9cdf148c98c0f70"
-
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "f180fc7154ac4d9283f9d34f4425b7b2c998d81899ab469e380712537a6c5322"
+  inputs-digest = "c34a7d61418342fbf0304900fd2b050735d10404c7cb04150965f94d701ba408"
   solver-name = "gps-cdcl"
   solver-version = 1
