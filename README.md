@@ -4,7 +4,7 @@
 
 ## Main features
 * Single executable with no external dependencies.
-* Single simple configuration file in JSON format.
+* Single simple configuration file in TOML format.
 * Basic and Digest access authentication methods.
 * IP-based black and white access lists.
 * Ability to log all requests.
@@ -49,11 +49,11 @@ and this will build the binary in ```$GOPATH/bin```.
 ## Usage
 
 ```
-$ ./microproxy --config microproxy.json
+$ ./microproxy --config microproxy.toml
 ```
 
 To enable debug mode, add `-v` switch. To only test configuration file correctness add `-t` switch,
-i.e. `$ ./microproxy --config microproxy.json -t`
+i.e. `$ ./microproxy --config microproxy.toml -t`
 
 ## Signal handling
 On `USR1` signal microproxy reopens access and activity log files.
