@@ -26,9 +26,5 @@
   branch = "master"
 
 [[constraint]]
-  branch = "master"
-  name = "github.com/xeipuuv/gojsonschema"
-
-[[constraint]]
   name = "github.com/BurntSushi/toml"
   branch = "master"
