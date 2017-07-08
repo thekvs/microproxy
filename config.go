@@ -64,6 +64,7 @@ func validateIP(addr string) {
 
 func validateAuthType(authType string) {
 	validValues := map[string]bool{
+		"":       true,
 		"basic":  true,
 		"digest": true,
 	}

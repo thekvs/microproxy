@@ -349,7 +349,7 @@ func TestIPBasedAccessDenied(t *testing.T) {
 	client, proxy, proxyserver := oneShotProxy()
 	defer proxyserver.Close()
 
-	s := "{\"allowed_networks\": [\"172.16.11.0/24\"]}\n"
+	s := "allowed_networks = [\"172.16.11.0/24\"]\n"
 	conf := newConfiguration(bytes.NewBuffer([]byte(s)))
 	setAllowedNetworksHandler(conf, proxy)
 
@@ -372,7 +372,7 @@ func TestIPBasedAccessAllowed(t *testing.T) {
 	client, proxy, proxyserver := oneShotProxy()
 	defer proxyserver.Close()
 
-	s := "{\"allowed_networks\": [\"127.0.0.1/32\"]}\n"
+	s := "allowed_networks=[\"127.0.0.1/32\"]\n"
 	conf := newConfiguration(bytes.NewBuffer([]byte(s)))
 	setAllowedNetworksHandler(conf, proxy)
 
@@ -406,7 +406,7 @@ func TestHTTPSConnectDenied(t *testing.T) {
 	defer proxyserver.Close()
 
 	// test server'll bind to the port different from 443
-	s := fmt.Sprintf("{\"allowed_connect_ports\": [\"%d\"]}\n", 443)
+	s := fmt.Sprintf("allowed_connect_ports=[%d]\n", 443)
 	conf := newConfiguration(bytes.NewBuffer([]byte(s)))
 	setAllowedConnectPortsHandler(conf, proxy)
 
@@ -431,7 +431,7 @@ func TestHTTPSConnectAllowed(t *testing.T) {
 	client, proxy, proxyserver := oneShotProxy()
 	defer proxyserver.Close()
 
-	s := fmt.Sprintf("{\"allowed_connect_ports\": [%d]}\n", port)
+	s := fmt.Sprintf("allowed_connect_ports=[%d]\n", port)
 	conf := newConfiguration(bytes.NewBuffer([]byte(s)))
 	setAllowedConnectPortsHandler(conf, proxy)
 

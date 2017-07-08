@@ -45,7 +45,7 @@ func TestCustomHeaders(t *testing.T) {
 	client, proxy, proxyserver := oneShotProxy()
 	defer proxyserver.Close()
 
-	s := fmt.Sprint(`{"add_headers": {"X-Custom-Header-1": "Value-1", "X-Custom-Header-2": "Value-2"}}`)
+	s := fmt.Sprint(`add_headers=[["X-Custom-Header-1", "Value-1"], ["X-Custom-Header-2", "Value-2"]]`)
 	conf := newConfiguration(bytes.NewBuffer([]byte(s)))
 	setAddCustomHeadersHandler(conf, proxy)
 
@@ -83,7 +83,7 @@ func TestViaHeaders(t *testing.T) {
 	client, proxy, proxyserver := oneShotProxy()
 	defer proxyserver.Close()
 
-	s := fmt.Sprint(`{"via_header": "on", "via_proxy_name": "octopus"}`)
+	s := fmt.Sprint("via_header=\"on\"\nvia_proxy_name=\"octopus\"\n")
 	conf := newConfiguration(bytes.NewBuffer([]byte(s)))
 	setViaHeaderHandler(conf, proxy)
 
