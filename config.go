@@ -123,7 +123,7 @@ func newConfiguration(data io.Reader) *configuration {
 		conf.Listen = defaultListenAddress
 	}
 
-	// if no auth. enabled allow only from 127.0.0.1/32 if not deliberatly specified otherwise
+	// if no auth. enabled allow only from 127.0.0.1/32 if not deliberately specified otherwise
 	if conf.AllowedNetworks == nil || len(conf.AllowedNetworks) == 0 {
 		if conf.AuthFile == "" || conf.AuthType == "" {
 			conf.AllowedNetworks = make([]string, 1)
