@@ -39,7 +39,10 @@ const (
 type ConstantHanlder string
 
 func (h ConstantHanlder) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	io.WriteString(w, string(h))
+	_, err := io.WriteString(w, string(h))
+	if err != nil {
+		fmt.Printf("Error: %v", err)
+	}
 }
 
 func oneShotProxy() (client *http.Client, proxy *goproxy.ProxyHttpServer, s *httptest.Server) {

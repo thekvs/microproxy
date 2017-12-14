@@ -262,8 +262,15 @@ func makeCustomDial(localAddr *net.TCPAddr) func(string, string) (net.Conn, erro
 
 		conn, err := net.DialTCP(network, localAddr, remoteAddr)
 		if err == nil {
-			conn.SetKeepAlive(true)
-			conn.SetKeepAlivePeriod(tcpKeepAliveInterval)
+			err = conn.SetKeepAlive(true)
+			if err != nil {
+				log.Print(err)
+			}
+
+			err = conn.SetKeepAlivePeriod(tcpKeepAliveInterval)
+			if err != nil {
+				log.Print(err)
+			}
 		}
 
 		c := timedConn{
@@ -331,7 +338,10 @@ func setSignalHandler(conf *configuration, proxy *goproxy.ProxyHttpServer, logge
 			switch sig {
 			case os.Interrupt, syscall.SIGTERM:
 				proxy.Logger.Println("got interrupt signal, exiting")
-				logger.close()
+				err := logger.close()
+				if err != nil {
+					log.Printf("Close error: %v", err)
+				}
 				os.Exit(0)
 			case syscall.SIGUSR1:
 				proxy.Logger.Println("got USR1 signal, reopening logs")

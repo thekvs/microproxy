@@ -123,8 +123,10 @@ func newProxyLogger(conf *configuration) *proxyLogger {
 						log.Println("Can't write meta", err)
 					}
 				case reopenLog:
-					fh.Close()
-					var err error
+					err := fh.Close()
+					if err != nil {
+						log.Fatal(err)
+					}
 					fh, err = os.OpenFile(conf.AccessLog, os.O_APPEND|os.O_WRONLY|os.O_CREATE, 0600)
 					if err != nil {
 						log.Fatalf("Couldn't reopen log file: %v", err)
