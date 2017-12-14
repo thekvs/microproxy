@@ -392,7 +392,7 @@ func setHTTPLoggingHandler(proxy *goproxy.ProxyHttpServer, logger *proxyLogger) 
 }
 
 func main() {
-	configFile := flag.String("config", "microproxy.json", "proxy configuration file")
+	configFile := flag.String("config", "microproxy.toml", "proxy configuration file")
 	testConfigOnly := flag.Bool("t", false, "only test configuration file")
 	verboseMode := flag.Bool("v", false, "enable verbose debug mode")
 
