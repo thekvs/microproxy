@@ -140,7 +140,11 @@ func (h *digestAuth) newNonce() string {
 }
 
 func (h *digestAuth) addNonce(nonce string) {
-	h.nonces[nonce] = &nonceInfo{time.Now(), time.Now(), 0}
+	h.nonces[nonce] = &nonceInfo{
+		issued:           time.Now(),
+		lastUsed:         time.Now(),
+		lastNonceCounter: 0,
+	}
 }
 
 func (h *digestAuth) expireNonces() {

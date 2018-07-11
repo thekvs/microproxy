@@ -64,14 +64,17 @@ func makeBasicAuthValidator(auth *basicAuth) basicAuthFunc {
 	validator := func() {
 		for e := range channel {
 			status := auth.validate(e.data)
-			e.respChannel <- &basicAuthResponse{status}
+			e.respChannel <- &basicAuthResponse{status: status}
 		}
 	}
 
 	go validator()
 
 	return func(authData *basicAuthData) *basicAuthResponse {
-		request := &basicAuthRequest{authData, make(chan *basicAuthResponse)}
+		request := &basicAuthRequest{
+			data:        authData,
+			respChannel: make(chan *basicAuthResponse),
+		}
 		channel <- request
 		return <-request.respChannel
 	}

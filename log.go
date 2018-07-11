@@ -112,7 +112,11 @@ func newProxyLogger(conf *configuration) *proxyLogger {
 		}
 	}
 
-	logger := &proxyLogger{conf.AccessLog, make(chan *logData), make(chan error)}
+	logger := &proxyLogger{
+		path:         conf.AccessLog,
+		logChannel:   make(chan *logData),
+		errorChannel: make(chan error),
+	}
 
 	go func() {
 		for m := range logger.logChannel {
