@@ -15,7 +15,7 @@ func TestBasicAuthFile(t *testing.T) {
 	if valid := auth.validate(&basicAuthData{
 		user:     "testuser",
 		password: "asdf",
-	}); valid != true {
+	}); !valid {
 		t.Errorf("password validation failed")
 	}
 }
