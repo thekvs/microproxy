@@ -413,7 +413,7 @@ func main() {
 
 	conf := newConfigurationFromFile(*configFile)
 
-	if *testConfigOnly == true {
+	if *testConfigOnly {
 		fmt.Println("Configuration file seems ok.")
 		os.Exit(0)
 	}
