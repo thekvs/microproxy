@@ -426,6 +426,10 @@ func TestHTTPSConnectAllowed(t *testing.T) {
 	defer background.Close()
 
 	parsedURL, err := url.Parse(background.URL)
+	if err != nil {
+		t.Fatal(err)
+	}
+
 	port, err := strconv.ParseUint(strings.Split(parsedURL.Host, ":")[1], 10, 16)
 	if err != nil {
 		t.Fatal(err)
