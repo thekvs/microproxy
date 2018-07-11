@@ -33,7 +33,7 @@ const (
 )
 
 func validateNetworks(networks []string) {
-	if networks != nil && len(networks) > 0 {
+	if len(networks) > 0 {
 		for i, network := range networks {
 			_, _, err := net.ParseCIDR(network)
 			if err != nil {
