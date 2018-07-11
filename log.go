@@ -31,9 +31,9 @@ type logData struct {
 }
 
 type proxyLogger struct {
-	path        string
-	logChannel  chan *logData
-	errorChanel chan error
+	path         string
+	logChannel   chan *logData
+	errorChannel chan error
 }
 
 func fprintf(nr *int64, err *error, w io.Writer, pat string, a ...interface{}) {
@@ -134,7 +134,7 @@ func newProxyLogger(conf *configuration) *proxyLogger {
 				}
 			}
 		}
-		logger.errorChanel <- fh.Close()
+		logger.errorChannel <- fh.Close()
 	}()
 
 	return logger
@@ -183,7 +183,7 @@ func (logger *proxyLogger) log(ctx *goproxy.ProxyCtx) {
 
 func (logger *proxyLogger) close() error {
 	close(logger.logChannel)
-	return <-logger.errorChanel
+	return <-logger.errorChannel
 }
 
 func (logger *proxyLogger) reopen() {
