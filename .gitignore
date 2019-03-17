@@ -2,3 +2,4 @@ microproxy
 .tags*
 *.sublime*
 *.swp
+bin/
