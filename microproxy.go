@@ -340,14 +340,14 @@ func setSignalHandler(conf *configuration, proxy *goproxy.ProxyHttpServer, logge
 		for sig := range signalChannel {
 			switch sig {
 			case os.Interrupt, syscall.SIGTERM:
-				proxy.Logger.Println("got interrupt signal, exiting")
+				proxy.Logger.Printf("got interrupt signal, exiting\n")
 				err := logger.close()
 				if err != nil {
 					log.Printf("Close error: %v", err)
 				}
 				os.Exit(0)
 			case syscall.SIGUSR1:
-				proxy.Logger.Println("got USR1 signal, reopening logs")
+				proxy.Logger.Printf("got USR1 signal, reopening logs\n")
 				// reopen access log
 				logger.reopen()
 				// reopen activity log
@@ -364,13 +364,15 @@ func setAuthenticationHandler(conf *configuration, proxy *goproxy.ProxyHttpServe
 		if conf.AuthType == "basic" {
 			auth, err := newBasicAuthFromFile(conf.AuthFile)
 			if err != nil {
-				proxy.Logger.Fatalf("couldn't create basic auth structure: %v\n", err)
+				proxy.Logger.Printf("couldn't create basic auth structure: %v\n", err)
+				os.Exit(1)
 			}
 			setProxyBasicAuth(proxy, conf.AuthRealm, makeBasicAuthValidator(auth), logger)
 		} else {
 			auth, err := newDigestAuthFromFile(conf.AuthFile)
 			if err != nil {
-				proxy.Logger.Fatalf("couldn't create digest auth structure: %v\n", err)
+				proxy.Logger.Printf("couldn't create digest auth structure: %v\n", err)
+				os.Exit(1)
 			}
 			setProxyDigestAuth(proxy, conf.AuthRealm, makeDigestAuthValidator(auth), logger)
 		}
@@ -435,7 +437,7 @@ func main() {
 	// has to be placed last in the source code.
 	setAuthenticationHandler(conf, proxy, logger)
 
-	proxy.Logger.Println("starting proxy")
+	proxy.Logger.Printf("starting proxy\n")
 
 	log.Fatal(http.ListenAndServe(conf.Listen, proxy))
 }

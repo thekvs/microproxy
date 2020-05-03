@@ -1,6 +1,8 @@
 module github.com/thekvs/microproxy
 
+go 1.14
+
 require (
-	github.com/BurntSushi/toml v0.0.0-20170626110600-a368813c5e64
-	github.com/elazarl/goproxy v0.0.0-20180530192236-91d82cc1070b
+	github.com/BurntSushi/toml v0.3.1
+	github.com/elazarl/goproxy v0.0.0-20200426045556-49ad98f6dac1
 )
