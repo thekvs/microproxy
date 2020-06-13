@@ -1,8 +1,6 @@
 package main
 
 import (
-	"github.com/elazarl/goproxy"
-
 	"bytes"
 	"encoding/base64"
 	"fmt"
@@ -10,10 +8,14 @@ import (
 	"net/http"
 	"regexp"
 	"strings"
+
+	"github.com/elazarl/goproxy"
 )
 
-type basicAuthFunc func(authData *basicAuthData) *basicAuthResponse
-type digestAuthFunc func(authData *digestAuthData, op int) *digestAuthResponse
+type (
+	basicAuthFunc  func(authData *basicAuthData) *basicAuthResponse
+	digestAuthFunc func(authData *digestAuthData, op int) *digestAuthResponse
+)
 
 var unauthorizedMsg = []byte("407 Proxy Authentication Required")
 
@@ -192,7 +194,7 @@ func performDigestAuth(req *http.Request, authFunc digestAuthFunc) (bool, *diges
 		panic("unreachable point")
 	}
 
-	//return false, data
+	// return false, data
 }
 
 func basicAuthReqHandler(realm string, authFunc basicAuthFunc) goproxy.ReqHandler {

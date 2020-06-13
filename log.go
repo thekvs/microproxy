@@ -1,14 +1,14 @@
 package main
 
 import (
-	"github.com/elazarl/goproxy"
-
 	"fmt"
 	"io"
 	"log"
 	"net/http"
 	"os"
 	"time"
+
+	"github.com/elazarl/goproxy"
 )
 
 const (
@@ -106,7 +106,7 @@ func newProxyLogger(conf *configuration) *proxyLogger {
 
 	if conf.AccessLog != "" {
 		var err error
-		fh, err = os.OpenFile(conf.AccessLog, os.O_APPEND|os.O_WRONLY|os.O_CREATE, 0600)
+		fh, err = os.OpenFile(conf.AccessLog, os.O_APPEND|os.O_WRONLY|os.O_CREATE, 0o600)
 		if err != nil {
 			log.Fatalf("Couldn't open log file: %v", err)
 		}
@@ -131,7 +131,7 @@ func newProxyLogger(conf *configuration) *proxyLogger {
 					if err != nil {
 						log.Fatal(err)
 					}
-					fh, err = os.OpenFile(conf.AccessLog, os.O_APPEND|os.O_WRONLY|os.O_CREATE, 0600)
+					fh, err = os.OpenFile(conf.AccessLog, os.O_APPEND|os.O_WRONLY|os.O_CREATE, 0o600)
 					if err != nil {
 						log.Fatalf("Couldn't reopen log file: %v", err)
 					}
@@ -153,7 +153,8 @@ func (logger *proxyLogger) logRequest(req *http.Request, ctx *goproxy.ProxyCtx) 
 		action: appendLog,
 		req:    req,
 		err:    ctx.Error,
-		time:   time.Now()})
+		time:   time.Now(),
+	})
 }
 
 func (logger *proxyLogger) logResponse(resp *http.Response, ctx *goproxy.ProxyCtx) {
@@ -166,7 +167,8 @@ func (logger *proxyLogger) logResponse(resp *http.Response, ctx *goproxy.ProxyCt
 		resp:   resp,
 		user:   getAuthenticatedUserName(ctx),
 		err:    ctx.Error,
-		time:   time.Now()})
+		time:   time.Now(),
+	})
 }
 
 func (logger *proxyLogger) writeLogEntry(data *logData) {

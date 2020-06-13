@@ -1,8 +1,6 @@
 package main
 
 import (
-	"github.com/elazarl/goproxy"
-
 	"flag"
 	"fmt"
 	"log"
@@ -15,6 +13,8 @@ import (
 	"strings"
 	"syscall"
 	"time"
+
+	"github.com/elazarl/goproxy"
 )
 
 // Digest auth. operation type
@@ -324,7 +324,7 @@ func createProxy(conf *configuration) *goproxy.ProxyHttpServer {
 
 func setActivityLog(conf *configuration, proxy *goproxy.ProxyHttpServer) {
 	if conf.ActivityLog != "" {
-		fh, err := os.OpenFile(conf.ActivityLog, os.O_APPEND|os.O_WRONLY|os.O_CREATE, 0600)
+		fh, err := os.OpenFile(conf.ActivityLog, os.O_APPEND|os.O_WRONLY|os.O_CREATE, 0o600)
 		if err != nil {
 			log.Fatalf("couldn't open activity log file %v: %v", conf.ActivityLog, err)
 		}
