@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"flag"
 	"fmt"
 	"log"
@@ -256,24 +257,26 @@ func setAddCustomHeadersHandler(conf *configuration, proxy *goproxy.ProxyHttpSer
 	}
 }
 
-func makeCustomDial(localAddr *net.TCPAddr) func(string, string) (net.Conn, error) {
-	return func(network, addr string) (net.Conn, error) {
+func makeCustomDialContext(localAddr *net.TCPAddr) func(context.Context, string, string) (net.Conn, error) {
+	return func(ctx context.Context, network, addr string) (net.Conn, error) {
 		remoteAddr, err := net.ResolveTCPAddr(network, addr)
 		if err != nil {
 			return nil, err
 		}
 
 		conn, err := net.DialTCP(network, localAddr, remoteAddr)
-		if err == nil {
-			err = conn.SetKeepAlive(true)
-			if err != nil {
-				log.Print(err)
-			}
+		if err != nil {
+			return nil, err
+		}
 
-			err = conn.SetKeepAlivePeriod(tcpKeepAliveInterval)
-			if err != nil {
-				log.Print(err)
-			}
+		err = conn.SetKeepAlive(true)
+		if err != nil {
+			return nil, err
+		}
+
+		err = conn.SetKeepAlivePeriod(tcpKeepAliveInterval)
+		if err != nil {
+			return nil, err
 		}
 
 		c := timedConn{
@@ -282,7 +285,7 @@ func makeCustomDial(localAddr *net.TCPAddr) func(string, string) (net.Conn, erro
 			writeTimeout: defaultWriteTimeout,
 		}
 
-		return c, err
+		return c, nil
 	}
 }
 
@@ -310,12 +313,12 @@ func createProxy(conf *configuration) *goproxy.ProxyHttpServer {
 	if addressOk {
 		if laddr != "" {
 			if addr, err := net.ResolveTCPAddr("tcp", laddr); err == nil {
-				proxy.Tr.Dial = makeCustomDial(addr)
+				proxy.Tr.DialContext = makeCustomDialContext(addr)
 			} else {
 				proxy.Logger.Printf("WARN: couldn't use \"%v\" as outgoing request address. %v\n", conf.BindIP, err)
 			}
 		} else {
-			proxy.Tr.Dial = makeCustomDial(nil)
+			proxy.Tr.DialContext = makeCustomDialContext(nil)
 		}
 	}
 
