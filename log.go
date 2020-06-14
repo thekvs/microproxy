@@ -45,15 +45,6 @@ func fprintf(nr *int64, err *error, w io.Writer, pat string, a ...interface{}) {
 	*nr += int64(n)
 }
 
-func write(nr *int64, err *error, w io.Writer, b []byte) {
-	if *err != nil {
-		return
-	}
-	var n int
-	n, *err = w.Write(b)
-	*nr += int64(n)
-}
-
 func getAuthenticatedUserName(ctx *goproxy.ProxyCtx) string {
 	user, ok := ctx.UserData.(string)
 	if !ok {
@@ -142,19 +133,6 @@ func newProxyLogger(conf *configuration) *proxyLogger {
 	}()
 
 	return logger
-}
-
-func (logger *proxyLogger) logRequest(req *http.Request, ctx *goproxy.ProxyCtx) {
-	if req == nil {
-		req = emptyReq
-	}
-
-	logger.writeLogEntry(&logData{
-		action: appendLog,
-		req:    req,
-		err:    ctx.Error,
-		time:   time.Now(),
-	})
 }
 
 func (logger *proxyLogger) logResponse(resp *http.Response, ctx *goproxy.ProxyCtx) {
