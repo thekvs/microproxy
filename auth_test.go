@@ -50,19 +50,24 @@ func oneShotProxy() (client *http.Client, proxy *goproxy.ProxyHttpServer, s *htt
 	s = httptest.NewServer(proxy)
 
 	proxyURL, _ := url.Parse(s.URL)
+
 	tr := &http.Transport{
 		Proxy:           http.ProxyURL(proxyURL),
 		TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
 	}
+
 	client = &http.Client{Transport: tr}
-	return
+
+	return client, proxy, s
 }
 
 func times(n int, s string) string {
 	r := make([]byte, 0, n*len(s))
+
 	for i := 0; i < n; i++ {
 		r = append(r, s...)
 	}
+
 	return string(r)
 }
 
