@@ -160,7 +160,7 @@ func sourceIPMatches(networks []string) goproxy.ReqConditionFunc {
 	return func(req *http.Request, ctx *goproxy.ProxyCtx) bool {
 		ip, _, err := net.SplitHostPort(req.RemoteAddr)
 		if err != nil {
-			ctx.Warnf("coudn't parse remote address %v: %v", req.RemoteAddr, err)
+			ctx.Warnf("couldn't parse remote address %v: %v", req.RemoteAddr, err)
 			return false
 		}
 		addr := net.ParseIP(ip)
