@@ -24,6 +24,7 @@ type configuration struct {
 	ViaHeader           string     `toml:"via_header"`
 	ViaProxyName        string     `toml:"via_proxy_name"`
 	AddHeaders          [][]string `toml:"add_headers"`
+	ForwardProxyURL     string     `toml:"forward_proxy_url"`
 }
 
 const (

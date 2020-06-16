@@ -45,6 +45,7 @@ and this will build the binary in ```$GOPATH/bin```.
 * `disallowed_networks=["net1", ...]` -- list of blacklisted networks in CIDR format.
 * `bind_ip="ip"` -- specify which IP will be used for outgoing connections.
 * `add_headers=[["header1", value1"], ["header2", "value2"]...]` -- adds specified headers to outgoing HTTP requests, this option will not work for HTTPS connections.
+* `forward_proxy_url="http://user:password@host:port"` -- specify proxy to forward requests to. Uses basic auth type for the forward proxy.
 
 ## Usage
 

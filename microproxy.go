@@ -2,11 +2,13 @@ package main
 
 import (
 	"context"
+	"encoding/base64"
 	"flag"
 	"fmt"
 	"log"
 	"net"
 	"net/http"
+	"net/url"
 	"os"
 	"os/signal"
 	"regexp"
@@ -409,6 +411,34 @@ func setHTTPLoggingHandler(proxy *goproxy.ProxyHttpServer, logger *proxyLogger) 
 		})
 }
 
+func setForwardProxy(conf *configuration, proxy *goproxy.ProxyHttpServer) {
+	if len(conf.ForwardProxyURL) == 0 {
+		return
+	}
+
+	u, err := url.Parse(conf.ForwardProxyURL)
+	if err != nil {
+		proxy.Logger.Printf("can't parse forward proxy URL: %v", err)
+		os.Exit(1)
+	}
+
+	proxy.Tr = &http.Transport{Proxy: func(req *http.Request) (*url.URL, error) {
+		return url.Parse(conf.ForwardProxyURL)
+	}}
+
+	if len(u.User.String()) > 0 {
+		connectHandler := func(req *http.Request) {
+			req.Header.Del(proxyAuthorizatonHeader)
+			if len(u.User.Username()) > 0 {
+				req.Header.Set(proxyAuthorizatonHeader, "Basic "+base64.StdEncoding.EncodeToString([]byte(u.User.String())))
+			}
+		}
+		proxy.ConnectDial = proxy.NewConnectDialToProxyWithHandler(conf.ForwardProxyURL, connectHandler)
+	} else {
+		proxy.ConnectDial = proxy.NewConnectDialToProxy(conf.ForwardProxyURL)
+	}
+}
+
 func main() {
 	configFile := flag.String("config", "microproxy.toml", "proxy configuration file")
 	testConfigOnly := flag.Bool("t", false, "only test configuration file")
@@ -429,6 +459,7 @@ func main() {
 	logger := newProxyLogger(conf)
 
 	setHTTPLoggingHandler(proxy, logger)
+	setForwardProxy(conf, proxy)
 	setAllowedConnectPortsHandler(conf, proxy)
 	setAllowedNetworksHandler(conf, proxy)
 	setForwardedForHeaderHandler(conf, proxy)
