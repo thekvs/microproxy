@@ -1,6 +1,6 @@
 [![Build Status](https://travis-ci.org/thekvs/microproxy.svg?branch=master)](https://travis-ci.org/thekvs/microproxy)
 ## About
-```microproxy``` is a lightweight non-caching HTTP/HTTPS proxy server.
+`microproxy` is a lightweight non-caching HTTP/HTTPS proxy server.
 
 ## Main features
 * Single executable with no external dependencies.
@@ -18,7 +18,9 @@ This project is written in the [Go](http://golang.org/) programming language and
 ```
 $ go get github.com/thekvs/microproxy
 ```
-and this will build the binary in ```$GOPATH/bin```.
+and this will build the binary in `$GOPATH/bin`.
+
+Run `go build -mod=vendor` for local build.
 
 ## Configuration file options
 `microproxy` uses [TOML](https://github.com/toml-lang/toml) format for configuration file. Below is a list of supported configuration options.
@@ -27,17 +29,17 @@ and this will build the binary in ```$GOPATH/bin```.
 * `access_log="path"` -- path to a file where to write requested through proxy urls.
 * `activity_log="path"` -- path to a file where to write debug and auxiliary information.
 * `allowed_connect_ports=[port1, port2, ...]` -- list of allowed port to CONNECT to. Default: `[443]`
-* `auth_file="path"` -- path to a file with users' passwords. If you use "digest" auth. scheme this file has to be in the format used by Apache's [htdigest](http://httpd.apache.org/docs/2.4/programs/htdigest.html) utility, for "basic" scheme it has to be in the format used by Apache's [htpasswd](http://httpd.apache.org/docs/2.4/programs/htpasswd.html) utility with -p option, i.e. created as `$ htpasswd -c -p auth.txt username`.
-* `auth_type="type"` -- authentication scheme type. Avalible options are:
+* `auth_file="path"` -- path to a file with users' passwords. If you use `digest` auth. scheme this file has to be in the format used by Apache's [htdigest](http://httpd.apache.org/docs/2.4/programs/htdigest.html) utility, for `basic` scheme it has to be in the format used by Apache's [htpasswd](http://httpd.apache.org/docs/2.4/programs/htpasswd.html) utility with -p option, i.e. created as `$ htpasswd -c -p auth.txt username`.
+* `auth_type="type"` -- authentication scheme type. Available options are:
   * `"basic"` -- use Basic authentication scheme.
   * `"digest"` -- use Digest authentication scheme.
 * `auth_realm="realmstring"` -- realm name which is to be reported to the client for the proxy authentication scheme.
-* `forwarded_for_header="action"` -- specifies how to handle `X-Forwarded-For` HTTP protocol header. Avalible options are:
+* `forwarded_for_header="action"` -- specifies how to handle `X-Forwarded-For` HTTP protocol header. Available options are:
   * `"on"` -- set `X-Forwarded-For` header with client's IP address, this is a default choice.
   * `"off"` -- do nothing, i.e. leave headear as is.
   * `"delete"` -- delete `X-Forwarded-For` header, this turns on stealth mode.
   * `"truncate"` -- delete all old `X-Forwarded-For` headers and insert a new one with client's IP address.
-* `via_header="action"` -- specifies how to handle `Via` HTTP protocol header. Avalible options are:
+* `via_header="action"` -- specifies how to handle `Via` HTTP protocol header. Available options are:
   * `"on"` -- set `Via` header, this is a default choice.
   * `"off"` -- do nothing with `Via` header.
   * `"delete"` -- delete `Via` header.
