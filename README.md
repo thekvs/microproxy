@@ -10,6 +10,7 @@
 * Ability to log all requests.
 * Ability to tweak X-Forwarded-For header.
 * Ability to specify IP address for outgoing connections.
+* Ability to forward requests to upstream proxy.
 * Reasonable memory usage.
 
 ## Installing
