@@ -12,8 +12,8 @@ import (
 )
 
 const (
-	appendLog int = iota
-	reopenLog int = iota
+	AppendLog int = iota
+	ReopenLog int = iota
 )
 
 var (
@@ -21,7 +21,7 @@ var (
 	emptyReq  = &http.Request{}
 )
 
-type logData struct {
+type LogData struct {
 	action int
 	req    *http.Request
 	resp   *http.Response
@@ -30,9 +30,9 @@ type logData struct {
 	time   time.Time
 }
 
-type proxyLogger struct {
+type ProxyLogger struct {
 	path         string
-	logChannel   chan *logData
+	logChannel   chan *LogData
 	errorChannel chan error
 }
 
@@ -54,7 +54,7 @@ func getAuthenticatedUserName(ctx *goproxy.ProxyCtx) string {
 	return user
 }
 
-func (m *logData) writeTo(w io.Writer) (nr int64, err error) {
+func (m *LogData) writeTo(w io.Writer) (nr int64, err error) {
 	if m.resp != nil {
 		if m.resp.Request != nil {
 			fprintf(&nr, &err, w,
@@ -92,7 +92,7 @@ func (m *logData) writeTo(w io.Writer) (nr int64, err error) {
 	return
 }
 
-func newProxyLogger(conf *configuration) *proxyLogger {
+func newProxyLogger(conf *Configuration) *ProxyLogger {
 	var fh *os.File
 
 	if conf.AccessLog != "" {
@@ -103,9 +103,9 @@ func newProxyLogger(conf *configuration) *proxyLogger {
 		}
 	}
 
-	logger := &proxyLogger{
+	logger := &ProxyLogger{
 		path:         conf.AccessLog,
-		logChannel:   make(chan *logData),
+		logChannel:   make(chan *LogData),
 		errorChannel: make(chan error),
 	}
 
@@ -113,11 +113,11 @@ func newProxyLogger(conf *configuration) *proxyLogger {
 		for m := range logger.logChannel {
 			if fh != nil {
 				switch m.action {
-				case appendLog:
+				case AppendLog:
 					if _, err := m.writeTo(fh); err != nil {
 						log.Println("Can't write meta", err)
 					}
-				case reopenLog:
+				case ReopenLog:
 					err := fh.Close()
 					if err != nil {
 						log.Fatal(err)
@@ -135,13 +135,13 @@ func newProxyLogger(conf *configuration) *proxyLogger {
 	return logger
 }
 
-func (logger *proxyLogger) logResponse(resp *http.Response, ctx *goproxy.ProxyCtx) {
+func (logger *ProxyLogger) logResponse(resp *http.Response, ctx *goproxy.ProxyCtx) {
 	if resp == nil {
 		resp = emptyResp
 	}
 
-	logger.writeLogEntry(&logData{
-		action: appendLog,
+	logger.writeLogEntry(&LogData{
+		action: AppendLog,
 		resp:   resp,
 		user:   getAuthenticatedUserName(ctx),
 		err:    ctx.Error,
@@ -149,13 +149,13 @@ func (logger *proxyLogger) logResponse(resp *http.Response, ctx *goproxy.ProxyCt
 	})
 }
 
-func (logger *proxyLogger) writeLogEntry(data *logData) {
+func (logger *ProxyLogger) writeLogEntry(data *LogData) {
 	logger.logChannel <- data
 }
 
-func (logger *proxyLogger) log(ctx *goproxy.ProxyCtx) {
-	data := &logData{
-		action: appendLog,
+func (logger *ProxyLogger) log(ctx *goproxy.ProxyCtx) {
+	data := &LogData{
+		action: AppendLog,
 		req:    ctx.Req,
 		resp:   ctx.Resp,
 		user:   getAuthenticatedUserName(ctx),
@@ -165,11 +165,11 @@ func (logger *proxyLogger) log(ctx *goproxy.ProxyCtx) {
 	logger.writeLogEntry(data)
 }
 
-func (logger *proxyLogger) close() error {
+func (logger *ProxyLogger) close() error {
 	close(logger.logChannel)
 	return <-logger.errorChannel
 }
 
-func (logger *proxyLogger) reopen() {
-	logger.writeLogEntry(&logData{action: reopenLog})
+func (logger *ProxyLogger) reopen() {
+	logger.writeLogEntry(&LogData{action: ReopenLog})
 }

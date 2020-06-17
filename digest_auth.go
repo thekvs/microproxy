@@ -29,7 +29,7 @@ type digestAuth struct {
 	nonces map[string](*nonceInfo)
 }
 
-type digestAuthData struct {
+type DigestAuthData struct {
 	user     string
 	realm    string
 	nonce    string
@@ -87,7 +87,7 @@ func newDigestAuth(file io.Reader) (*digestAuth, error) {
 	return h, nil
 }
 
-func (h *digestAuth) validate(data *digestAuthData) bool {
+func (h *digestAuth) validate(data *DigestAuthData) bool {
 	lookupKey := data.user + ":" + data.realm
 	ha1, exists := h.users[lookupKey]
 	if !exists {

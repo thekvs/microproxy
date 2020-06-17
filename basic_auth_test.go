@@ -12,7 +12,7 @@ func TestBasicAuthFile(t *testing.T) {
 		t.Errorf("couldn't create basic auth structure")
 	}
 
-	if valid := auth.validate(&basicAuthData{
+	if valid := auth.validate(&BasicAuthData{
 		user:     "testuser",
 		password: "asdf",
 	}); !valid {

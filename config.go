@@ -9,7 +9,7 @@ import (
 	"github.com/BurntSushi/toml"
 )
 
-type configuration struct {
+type Configuration struct {
 	Listen              string     `toml:"listen"`
 	AccessLog           string     `toml:"access_log"`
 	ActivityLog         string     `toml:"activity_log"`
@@ -103,7 +103,7 @@ func validateViaHeaderAction(action string) {
 	}
 }
 
-func newConfigurationFromFile(path string) *configuration {
+func newConfigurationFromFile(path string) *Configuration {
 	file, err := os.Open(path)
 	if err != nil {
 		log.Fatal("can't open configuration file: ", err)
@@ -114,8 +114,8 @@ func newConfigurationFromFile(path string) *configuration {
 	return conf
 }
 
-func newConfiguration(data io.Reader) *configuration {
-	var conf configuration
+func newConfiguration(data io.Reader) *Configuration {
+	var conf Configuration
 	if _, err := toml.DecodeReader(data, &conf); err != nil {
 		log.Fatalf("Couldn't parse configuration file: %v", err)
 	}

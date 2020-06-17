@@ -13,15 +13,15 @@ import (
 )
 
 type (
-	basicAuthFunc  func(authData *basicAuthData) *basicAuthResponse
-	digestAuthFunc func(authData *digestAuthData, op int) *digestAuthResponse
+	BasicAuthFunc  func(authData *BasicAuthData) *BasicAuthResponse
+	DigestAuthFunc func(authData *DigestAuthData, op int) *DigestAuthResponse
 )
 
 var unauthorizedMsg = []byte("407 Proxy Authentication Required")
 
 const (
-	proxyAuthorizatonHeader = "Proxy-Authorization"
-	proxyAuthenticateHeader = "Proxy-Authenticate"
+	ProxyAuthorizatonHeader = "Proxy-Authorization"
+	ProxyAuthenticateHeader = "Proxy-Authenticate"
 )
 
 func basicUnauthorized(req *http.Request, realm string) *http.Response {
@@ -32,13 +32,13 @@ func basicUnauthorized(req *http.Request, realm string) *http.Response {
 		ProtoMajor:    1,
 		ProtoMinor:    1,
 		Request:       req,
-		Header:        http.Header{proxyAuthenticateHeader: []string{header}},
+		Header:        http.Header{ProxyAuthenticateHeader: []string{header}},
 		Body:          ioutil.NopCloser(bytes.NewBuffer(unauthorizedMsg)),
 		ContentLength: int64(len(unauthorizedMsg)),
 	}
 }
 
-func digestUnauthorized(req *http.Request, realm string, authFunc digestAuthFunc) *http.Response {
+func digestUnauthorized(req *http.Request, realm string, authFunc DigestAuthFunc) *http.Response {
 	authResult := authFunc(nil, getNonce)
 	nonce := authResult.data
 	header := fmt.Sprintf("Digest realm=\"%s\", qop=auth, nonce=\"%s\"", realm, nonce)
@@ -48,15 +48,15 @@ func digestUnauthorized(req *http.Request, realm string, authFunc digestAuthFunc
 		ProtoMajor:    1,
 		ProtoMinor:    1,
 		Request:       req,
-		Header:        http.Header{proxyAuthenticateHeader: []string{header}},
+		Header:        http.Header{ProxyAuthenticateHeader: []string{header}},
 		Body:          ioutil.NopCloser(bytes.NewBuffer(unauthorizedMsg)),
 		ContentLength: int64(len(unauthorizedMsg)),
 	}
 }
 
-func getDigestAuthData(req *http.Request) *digestAuthData {
-	authHeader := strings.SplitN(req.Header.Get(proxyAuthorizatonHeader), " ", 2)
-	req.Header.Del(proxyAuthorizatonHeader)
+func getDigestAuthData(req *http.Request) *DigestAuthData {
+	authHeader := strings.SplitN(req.Header.Get(ProxyAuthorizatonHeader), " ", 2)
+	req.Header.Del(ProxyAuthorizatonHeader)
 
 	if len(authHeader) != 2 || authHeader[0] != "Digest" {
 		return nil
@@ -104,7 +104,7 @@ func getDigestAuthData(req *http.Request) *digestAuthData {
 		m[kv[0]] = strings.Trim(kv[1], "\"")
 	}
 
-	var data digestAuthData
+	var data DigestAuthData
 
 	if v, ok := m["username"]; ok {
 		data.user = v
@@ -143,9 +143,9 @@ func getDigestAuthData(req *http.Request) *digestAuthData {
 	return &data
 }
 
-func getBasicAuthData(req *http.Request) *basicAuthData {
-	authHeader := strings.SplitN(req.Header.Get(proxyAuthorizatonHeader), " ", 2)
-	req.Header.Del(proxyAuthorizatonHeader)
+func getBasicAuthData(req *http.Request) *BasicAuthData {
+	authHeader := strings.SplitN(req.Header.Get(ProxyAuthorizatonHeader), " ", 2)
+	req.Header.Del(ProxyAuthorizatonHeader)
 
 	if len(authHeader) != 2 || authHeader[0] != "Basic" {
 		return nil
@@ -161,12 +161,12 @@ func getBasicAuthData(req *http.Request) *basicAuthData {
 		return nil
 	}
 
-	data := basicAuthData{user: userPassword[0], password: userPassword[1]}
+	data := BasicAuthData{user: userPassword[0], password: userPassword[1]}
 
 	return &data
 }
 
-func performBasicAuth(req *http.Request, authFunc basicAuthFunc) (bool, *basicAuthData) {
+func performBasicAuth(req *http.Request, authFunc BasicAuthFunc) (bool, *BasicAuthData) {
 	data := getBasicAuthData(req)
 	if data == nil {
 		return false, data
@@ -177,7 +177,7 @@ func performBasicAuth(req *http.Request, authFunc basicAuthFunc) (bool, *basicAu
 	return resp.status, data
 }
 
-func performDigestAuth(req *http.Request, authFunc digestAuthFunc) (bool, *digestAuthData) {
+func performDigestAuth(req *http.Request, authFunc DigestAuthFunc) (bool, *DigestAuthData) {
 	data := getDigestAuthData(req)
 	if data == nil {
 		return false, data
@@ -197,7 +197,7 @@ func performDigestAuth(req *http.Request, authFunc digestAuthFunc) (bool, *diges
 	// return false, data
 }
 
-func basicAuthReqHandler(realm string, authFunc basicAuthFunc) goproxy.ReqHandler {
+func basicAuthReqHandler(realm string, authFunc BasicAuthFunc) goproxy.ReqHandler {
 	return goproxy.FuncReqHandler(func(req *http.Request, ctx *goproxy.ProxyCtx) (*http.Request, *http.Response) {
 		status, data := performBasicAuth(req, authFunc)
 		if !status {
@@ -213,7 +213,7 @@ func basicAuthReqHandler(realm string, authFunc basicAuthFunc) goproxy.ReqHandle
 	})
 }
 
-func digestAuthReqHandler(realm string, authFunc digestAuthFunc) goproxy.ReqHandler {
+func digestAuthReqHandler(realm string, authFunc DigestAuthFunc) goproxy.ReqHandler {
 	return goproxy.FuncReqHandler(func(req *http.Request, ctx *goproxy.ProxyCtx) (*http.Request, *http.Response) {
 		status, data := performDigestAuth(req, authFunc)
 		if !status {
@@ -229,7 +229,7 @@ func digestAuthReqHandler(realm string, authFunc digestAuthFunc) goproxy.ReqHand
 	})
 }
 
-func basicConnectAuthHandler(realm string, authFunc basicAuthFunc, logger *proxyLogger) goproxy.HttpsHandler {
+func basicConnectAuthHandler(realm string, authFunc BasicAuthFunc, logger *ProxyLogger) goproxy.HttpsHandler {
 	return goproxy.FuncHttpsHandler(func(host string, ctx *goproxy.ProxyCtx) (*goproxy.ConnectAction, string) {
 		status, data := performBasicAuth(ctx.Req, authFunc)
 		if !status {
@@ -253,7 +253,7 @@ func basicConnectAuthHandler(realm string, authFunc basicAuthFunc, logger *proxy
 	})
 }
 
-func digestConnectAuthHandler(realm string, authFunc digestAuthFunc, logger *proxyLogger) goproxy.HttpsHandler {
+func digestConnectAuthHandler(realm string, authFunc DigestAuthFunc, logger *ProxyLogger) goproxy.HttpsHandler {
 	return goproxy.FuncHttpsHandler(func(host string, ctx *goproxy.ProxyCtx) (*goproxy.ConnectAction, string) {
 		status, data := performDigestAuth(ctx.Req, authFunc)
 		if !status {
@@ -278,12 +278,12 @@ func digestConnectAuthHandler(realm string, authFunc digestAuthFunc, logger *pro
 	})
 }
 
-func setProxyBasicAuth(proxy *goproxy.ProxyHttpServer, realm string, authFunc basicAuthFunc, logger *proxyLogger) {
+func setProxyBasicAuth(proxy *goproxy.ProxyHttpServer, realm string, authFunc BasicAuthFunc, logger *ProxyLogger) {
 	proxy.OnRequest().Do(basicAuthReqHandler(realm, authFunc))
 	proxy.OnRequest().HandleConnect(basicConnectAuthHandler(realm, authFunc, logger))
 }
 
-func setProxyDigestAuth(proxy *goproxy.ProxyHttpServer, realm string, authFunc digestAuthFunc, logger *proxyLogger) {
+func setProxyDigestAuth(proxy *goproxy.ProxyHttpServer, realm string, authFunc DigestAuthFunc, logger *ProxyLogger) {
 	proxy.OnRequest().Do(digestAuthReqHandler(realm, authFunc))
 	proxy.OnRequest().HandleConnect(digestConnectAuthHandler(realm, authFunc, logger))
 }

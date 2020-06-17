@@ -7,7 +7,7 @@ import (
 	"os"
 )
 
-type basicAuthData struct {
+type BasicAuthData struct {
 	user     string
 	password string
 }
@@ -52,7 +52,7 @@ func newBasicAuth(file io.Reader) (*basicAuth, error) {
 	return h, nil
 }
 
-func (h *basicAuth) validate(authData *basicAuthData) bool {
+func (h *basicAuth) validate(authData *BasicAuthData) bool {
 	realPassword, exists := h.users[authData.user]
 	if !exists || realPassword != authData.password {
 		return false
