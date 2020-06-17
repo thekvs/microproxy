@@ -17,16 +17,16 @@ const (
 	maxNonceInactiveInterval = 12 * time.Hour
 )
 
-type nonceInfo struct {
+type NonceInfo struct {
 	issued           time.Time
 	lastUsed         time.Time
 	lastNonceCounter uint64
 }
 
-type digestAuth struct {
+type DigestAuth struct {
 	users map[string]string
 	// issued nonce values
-	nonces map[string](*nonceInfo)
+	nonces map[string](*NonceInfo)
 }
 
 type DigestAuthData struct {
@@ -50,7 +50,7 @@ func makeRandomString(l int) string {
 	return string(b)
 }
 
-func newDigestAuthFromFile(path string) (*digestAuth, error) {
+func newDigestAuthFromFile(path string) (*DigestAuth, error) {
 	r, err := os.Open(path)
 	if err != nil {
 		return nil, err
@@ -59,7 +59,7 @@ func newDigestAuthFromFile(path string) (*digestAuth, error) {
 	return newDigestAuth(r)
 }
 
-func newDigestAuth(file io.Reader) (*digestAuth, error) {
+func newDigestAuth(file io.Reader) (*DigestAuth, error) {
 	csvReader := csv.NewReader(file)
 	csvReader.Comma = ':'
 	csvReader.Comment = '#'
@@ -70,7 +70,7 @@ func newDigestAuth(file io.Reader) (*digestAuth, error) {
 		return nil, err
 	}
 
-	h := &digestAuth{users: make(map[string]string), nonces: make(map[string](*nonceInfo))}
+	h := &DigestAuth{users: make(map[string]string), nonces: make(map[string](*NonceInfo))}
 
 	for _, record := range records {
 		// each record has to be in form: "user:realm:md5hash"
@@ -87,7 +87,7 @@ func newDigestAuth(file io.Reader) (*digestAuth, error) {
 	return h, nil
 }
 
-func (h *digestAuth) validate(data *DigestAuthData) bool {
+func (h *DigestAuth) validate(data *DigestAuthData) bool {
 	lookupKey := data.user + ":" + data.realm
 	ha1, exists := h.users[lookupKey]
 	if !exists {
@@ -123,7 +123,7 @@ func (h *digestAuth) validate(data *DigestAuthData) bool {
 	return false
 }
 
-func (h *digestAuth) newNonce() string {
+func (h *DigestAuth) newNonce() string {
 	var nonce string
 
 	for {
@@ -139,15 +139,15 @@ func (h *digestAuth) newNonce() string {
 	return nonce
 }
 
-func (h *digestAuth) addNonce(nonce string) {
-	h.nonces[nonce] = &nonceInfo{
+func (h *DigestAuth) addNonce(nonce string) {
+	h.nonces[nonce] = &NonceInfo{
 		issued:           time.Now(),
 		lastUsed:         time.Now(),
 		lastNonceCounter: 0,
 	}
 }
 
-func (h *digestAuth) expireNonces() {
+func (h *DigestAuth) expireNonces() {
 	currentTime := time.Now()
 	limit := currentTime.Add(-maxNonceInactiveInterval)
 	for key, value := range h.nonces {

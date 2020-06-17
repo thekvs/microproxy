@@ -83,7 +83,7 @@ func makeBasicAuthValidator(auth *basicAuth) BasicAuthFunc {
 	}
 }
 
-func makeDigestAuthValidator(auth *digestAuth) DigestAuthFunc {
+func makeDigestAuthValidator(auth *DigestAuth) DigestAuthFunc {
 	channel := make(chan *digestAuthRequest)
 
 	processor := func() {
