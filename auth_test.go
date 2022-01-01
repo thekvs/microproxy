@@ -275,8 +275,11 @@ func TestDigestAuth(t *testing.T) {
 func TestDigestAuthWithPython(t *testing.T) {
 	expected := "Hello, World!"
 
-	background := httptest.NewServer(ConstantHanlder(expected))
-	defer background.Close()
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Add("Content-Type", "text/plain")
+		fmt.Fprint(w, expected)
+	}))
+	defer ts.Close()
 
 	_, proxy, proxyserver := oneShotProxy()
 	defer proxyserver.Close()
@@ -289,12 +292,12 @@ func TestDigestAuthWithPython(t *testing.T) {
 	}
 	setProxyDigestAuth(proxy, realm, makeDigestAuthValidator(auth), nil)
 
-	cmd := exec.Command("python",
+	cmd := exec.Command("python3",
 		"proxy-digest-auth-test.py",
 		"--proxy", proxyserver.URL,
 		"--user", user,
 		"--password", password,
-		"--url", background.URL,
+		"--url", ts.URL,
 	)
 
 	out, err := cmd.CombinedOutput()
@@ -303,7 +306,14 @@ func TestDigestAuthWithPython(t *testing.T) {
 	}
 
 	// python adds '\n' so we need to remove it
-	result := strings.Trim(string(out), "\r\n")
+	outString := string(out)
+	result := strings.Trim(outString, "\r\n")
+
+	// output comes in the form b'...', so remove prefix "b'" and suffix "'"
+	if len(result) <= 3 {
+		t.Fatal("response is too short")
+	}
+	result = result[2 : len(result)-2]
 	if result != expected {
 		t.Error("Expected", expected, "got", result)
 	}
