@@ -1,4 +1,3 @@
-[![Build Status](https://travis-ci.org/thekvs/microproxy.svg?branch=master)](https://travis-ci.org/thekvs/microproxy)
 ## About
 `microproxy` is a lightweight non-caching HTTP/HTTPS proxy server.
 
