@@ -291,6 +291,38 @@ func makeCustomDialContext(localAddr *net.TCPAddr) func(context.Context, string,
 	}
 }
 
+func makeCustomDial(localAddr *net.TCPAddr) func(string, string) (net.Conn, error) {
+	return func(network, addr string) (net.Conn, error) {
+		remoteAddr, err := net.ResolveTCPAddr(network, addr)
+		if err != nil {
+			return nil, err
+		}
+
+		conn, err := net.DialTCP(network, localAddr, remoteAddr)
+		if err != nil {
+			return nil, err
+		}
+
+		err = conn.SetKeepAlive(true)
+		if err != nil {
+			return nil, err
+		}
+
+		err = conn.SetKeepAlivePeriod(tcpKeepAliveInterval)
+		if err != nil {
+			return nil, err
+		}
+
+		c := TimedConn{
+			Conn:         conn,
+			readTimeout:  DefaultReadTimeout,
+			writeTimeout: DefaultWriteTimeout,
+		}
+
+		return c, nil
+	}
+}
+
 func createProxy(conf *Configuration) *goproxy.ProxyHttpServer {
 	proxy := goproxy.NewProxyHttpServer()
 	setActivityLog(conf, proxy)
@@ -316,6 +348,8 @@ func createProxy(conf *Configuration) *goproxy.ProxyHttpServer {
 		if laddr != "" {
 			if addr, err := net.ResolveTCPAddr("tcp", laddr); err == nil {
 				proxy.Tr.DialContext = makeCustomDialContext(addr)
+				proxy.Tr.Dial = makeCustomDial(addr)
+				proxy.ConnectDial = makeCustomDial(addr)
 			} else {
 				proxy.Logger.Printf("WARN: couldn't use \"%v\" as outgoing request address. %v\n", conf.BindIP, err)
 			}
